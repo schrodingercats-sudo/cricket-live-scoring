@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: hostel-cricket-live
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    # Single worker is REQUIRED: WebSocket rooms + SQLite live in one process.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.11"
+      - key: DEBUG
+        value: "false"
+      # Set ADMIN_TOKEN in the Render dashboard to enable /api/admin/backup-db
+      - key: ADMIN_TOKEN
+        sync: false

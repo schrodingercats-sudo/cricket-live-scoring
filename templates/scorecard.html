@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Scorecard - Match #{{ match.id }}{% endblock %}
+
+{% block content %}
+<style>
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 10mm 10mm 10mm 10mm;
+    }
+    html, body {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      font-size: 10pt !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+    }
+    .navbar,
+    .sidebar,
+    .page-header a,
+    .page-header button,
+    #scorecard-live-sync-badge,
+    .badge,
+    .btn,
+    header,
+    footer,
+    nav,
+    .menu-toggle {
+      display: none !important;
+    }
+    .content, .main-content, .container, .content-container, main {
+      margin: 0 !important;
+      padding: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+    .page-header {
+      margin-bottom: 1rem !important;
+      border-bottom: 2.5px solid #0284c7 !important;
+      padding-bottom: 0.5rem !important;
+      display: block !important;
+    }
+    .page-title {
+      color: #0f172a !important;
+      font-size: 16pt !important;
+      font-weight: 800 !important;
+    }
+    .page-subtitle {
+      color: #334155 !important;
+      font-size: 10pt !important;
+      font-weight: 600 !important;
+    }
+    .card {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: none !important;
+      color: #0f172a !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+      margin-bottom: 1rem !important;
+      padding: 10px 14px !important;
+    }
+    .card-title {
+      color: #0f172a !important;
+      border-bottom: 1.5px solid #e2e8f0 !important;
+      padding-bottom: 6px !important;
+      margin-bottom: 8px !important;
+    }
+    .custom-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+    }
+    .custom-table th {
+      background: #f1f5f9 !important;
+      color: #1e293b !important;
+      border-bottom: 2px solid #94a3b8 !important;
+      padding: 5px 6px !important;
+      font-size: 9pt !important;
+      font-weight: 800 !important;
+    }
+    .custom-table td {
+      color: #0f172a !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      padding: 5px 6px !important;
+      font-size: 9.5pt !important;
+    }
+    .custom-table tr {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+    .mono {
+      font-weight: bold !important;
+      color: #0f172a !important;
+    }
+    span, div, h1, h2, h3, h4, p, strong, td, th {
+      color: #0f172a !important;
+      text-shadow: none !important;
+    }
+    .player-avatar-xs {
+      display: none !important;
+    }
+  }
+</style>
+
+<div id="match-data" data-match-id="{{ match.id }}"></div>
+
+<div class="page-header">
+  <div>
+    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+      <h1 class="page-title">📊 Match Scorecard</h1>
+      <span id="scorecard-live-sync-badge" class="badge badge-upcoming">CONNECTING...</span>
+      <span id="scorecard-toss-badge"
+        style="display: {% if match.toss_winner and match.toss_decision %}inline-flex{% else %}none{% endif %}; align-items: center; gap: 0.35rem; background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--radius-sm); padding: 0.18rem 0.55rem; font-size: 0.76rem; font-weight: 700; color: #fbbf24;">
+        🪙 <span id="scorecard-toss-text">{% if match.toss_winner and match.toss_decision %}{{ match.toss_winner.name }}
+          won toss & elected to {{ match.toss_decision|upper }}{% endif %}</span>
+      </span>
+    </div>
+    <p class="page-subtitle">{{ match.tournament.name }} • Match #{{ match.id }} (<span id="scorecard-total-overs-text">{{ match.total_overs }}</span> Overs) • ({{ match.team1.name }} vs {{
+      match.team2.name }})</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+    <button type="button" id="btn-save-scorecard-pdf" class="btn btn-primary btn-sm" onclick="downloadScorecardPDF()" title="Save Scorecard as PDF"
+      style="background: linear-gradient(135deg, #f59e0b, #d97706); border: none; font-weight: 800; color: #fff; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+      <span>📄</span>
+      <span>SAVE SCORECARD PDF</span>
+    </button>
+    <button type="button" id="btn-print-scorecard" class="btn btn-secondary btn-sm" onclick="window.print()" title="Print or Save via Browser Dialog"
+      style="display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+      <span>🖨️</span>
+      <span>Print / PDF</span>
+    </button>
+    <a href="/match/{{ match.id }}/live" class="btn btn-primary btn-sm">🔴 Live View</a>
+    <a href="/match/{{ match.id }}/scorer" class="btn btn-secondary btn-sm">📝 Scorer Screen</a>
+    <a href="/tournament/{{ match.tournament_id }}" class="btn btn-secondary btn-sm">🏆 Tournament</a>
+  </div>
+</div>
+
+<div id="scorecard-main-container">
+  <div style="padding: 2rem; text-align: center; color: var(--text-muted);">Loading Match Scorecard...</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/html2pdf.bundle.min.js"></script>
+<script>
+  window.__MATCH_ID__ = {{ match.id }};
+</script>
+<script src="{{ static_url('js/scorecard.js') }}"></script>
+{% endblock %}

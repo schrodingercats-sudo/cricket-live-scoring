@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Commentator Dashboard - {{ match.team1.name if match.team1 else 'Team 1' }} vs {{ match.team2.name if match.team2 else 'Team 2' }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ static_url('css/commentator.css') }}">
+{% endblock %}
+
+{% block content %}
+<body class="commentator-body">
+  <!-- Hidden Match Metadata -->
+  <div id="match-data" data-match-id="{{ match.id }}" style="display:none;"></div>
+
+  <div class="comm-dashboard-container">
+    
+    <!-- =======================================================================
+         1. MATCH HEADER BAR
+         ======================================================================= -->
+    <header class="comm-header-bar">
+      <div class="comm-header-left">
+        <span class="comm-tourney-badge">
+          🏆 <span id="comm-tourney-name">{{ match.tournament.name if match.tournament else 'Hostel Premier League' }}</span>
+        </span>
+        <span class="comm-match-tag">MATCH #<span id="comm-match-num">{{ match.match_number or match.id }}</span></span>
+        
+        <div class="comm-header-teams">
+          {% if match.team1 and match.team1.logo_url %}
+            <img src="{{ match.team1.logo_url }}" class="comm-team-avatar-mini" alt="{{ match.team1.name }}">
+          {% else %}
+            <span class="comm-team-avatar-mini">{{ match.team1.name[:2]|upper if match.team1 else 'T1' }}</span>
+          {% endif %}
+          <span id="comm-team1-name">{{ match.team1.name if match.team1 else 'Team 1' }}</span>
+          
+          <span class="comm-vs-tag">VS</span>
+          
+          {% if match.team2 and match.team2.logo_url %}
+            <img src="{{ match.team2.logo_url }}" class="comm-team-avatar-mini" alt="{{ match.team2.name }}">
+          {% else %}
+            <span class="comm-team-avatar-mini">{{ match.team2.name[:2]|upper if match.team2 else 'T2' }}</span>
+          {% endif %}
+          <span id="comm-team2-name">{{ match.team2.name if match.team2 else 'Team 2' }}</span>
+        </div>
+      </div>
+
+      <div class="comm-header-center">
+        <div id="comm-status-pill" class="comm-status-pill live">
+          <span class="comm-status-dot"></span>
+          <span id="comm-status-text">LIVE</span>
+        </div>
+      </div>
+
+      <div class="comm-header-right">
+        <!-- Match Selector Switcher -->
+        <select id="comm-match-selector" class="comm-select" title="Switch Match">
+          {% for m in all_matches %}
+            <option value="{{ m.id }}" {% if m.id == match.id %}selected{% endif %}>
+              #{{ m.match_number or m.id }}: {{ m.team1.name if m.team1 else 'T1' }} vs {{ m.team2.name if m.team2 else 'T2' }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <a href="/match/{{ match.id }}/scorer" class="comm-btn-hdr" target="_blank" title="Open Scorer Page">
+          📝 Scorer
+        </a>
+        <a href="/match/{{ match.id }}/live" class="comm-btn-hdr" target="_blank" title="Open Live Stadium View">
+          📺 Live View
+        </a>
+        <button type="button" id="btn-comm-fullscreen" class="comm-btn-hdr" onclick="toggleCommentatorFullscreen()" title="Full Screen (F11)">
+          ⛶ Fullscreen
+        </button>
+      </div>
+    </header>
+
+    <!-- =======================================================================
+         2. PRIMARY STATS ROW (Score | Batsmen | Bowler | Situation)
+         ======================================================================= -->
+    <section class="comm-row-top">
+      
+      <!-- Card 1: Live Score -->
+      <div class="comm-card comm-card-score">
+        <div class="comm-card-title">
+          <span>🏏 <span id="comm-batting-team-label">{{ live_state.batting_team if live_state else (match.team1.name if match.team1 else 'Batting') }}</span> INNINGS</span>
+          <span id="comm-innings-badge" style="color: var(--comm-gold);">INN {{ live_state.current_innings_number if live_state else 1 }}</span>
+        </div>
+        <div class="comm-score-main">
+          <div class="comm-score-runs">
+            <span id="comm-runs">{{ live_state.runs if live_state else 0 }}</span><span style="color: var(--comm-cyan);">/</span><span id="comm-wickets" style="color: #f87171;">{{ live_state.wickets if live_state else 0 }}</span>
+          </div>
+          <div class="comm-score-overs">
+            <span id="comm-overs">{{ live_state.overs_display if live_state else '0.0' }}</span><span style="font-size:0.75em; color:var(--comm-text-dim);">/{{ match.total_overs }} OV</span>
+          </div>
+        </div>
+        <div class="comm-score-rates">
+          <span>CRR: <strong id="comm-crr" style="color: #38bdf8;">{{ '%.2f'|format(live_state.current_run_rate) if live_state else '0.00' }}</strong></span>
+          <span>RRR: <strong id="comm-rrr" style="color: #fbbf24;">{{ '%.2f'|format(live_state.required_run_rate) if live_state and live_state.required_run_rate else '-' }}</strong></span>
+        </div>
+      </div>
+
+      <!-- Card 2: Current Batsmen (Mini Table Layout) -->
+      <div class="comm-card comm-card-batsmen">
+        <div class="comm-card-title">
+          <span>🏏 CURRENT BATSMEN</span>
+          <span style="font-size: 0.65rem; color: var(--comm-green);">● ACTIVE CREASE</span>
+        </div>
+        <div class="comm-mini-table-wrap">
+          <table class="comm-table comm-mini-table">
+            <thead>
+              <tr>
+                <th style="width: 45%; text-align: left;">BATSMAN</th>
+                <th class="col-right" style="width: 11%;">R</th>
+                <th class="col-right" style="width: 11%;">B</th>
+                <th class="col-right" style="width: 11%;">4s</th>
+                <th class="col-right" style="width: 11%;">6s</th>
+                <th class="col-right" style="width: 11%;">SR</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Striker Row (bg: green, text: white) -->
+              <tr id="comm-striker-box" class="comm-mini-row-striker">
+                <td style="text-align: left;">
+                  <span id="comm-striker-name" class="comm-mini-player-name">{{ live_state.striker.name ~ ' *' if live_state and live_state.striker else 'Striker -' }}</span>
+                </td>
+                <td id="comm-striker-runs" class="col-mono col-right comm-mini-runs">{{ live_state.striker.runs if live_state and live_state.striker else 0 }}</td>
+                <td id="comm-striker-balls" class="col-mono col-right">{{ live_state.striker.balls if live_state and live_state.striker else 0 }}</td>
+                <td id="comm-striker-fours" class="col-mono col-right comm-chip-four">{{ live_state.striker.fours if live_state and live_state.striker else 0 }}</td>
+                <td id="comm-striker-sixes" class="col-mono col-right comm-chip-six">{{ live_state.striker.sixes if live_state and live_state.striker else 0 }}</td>
+                <td id="comm-striker-sr-top" class="col-mono col-right">{{ '%.1f'|format(live_state.striker.strike_rate) if live_state and live_state.striker else '0.0' }}</td>
+              </tr>
+              <!-- Non-Striker Row -->
+              <tr id="comm-nonstriker-box" class="comm-mini-row-nonstriker">
+                <td style="text-align: left;">
+                  <span id="comm-nonstriker-name" class="comm-mini-player-name">{{ live_state.non_striker.name if live_state and live_state.non_striker else 'Non-Striker -' }}</span>
+                </td>
+                <td id="comm-nonstriker-runs" class="col-mono col-right comm-mini-runs">{{ live_state.non_striker.runs if live_state and live_state.non_striker else 0 }}</td>
+                <td id="comm-nonstriker-balls" class="col-mono col-right">{{ live_state.non_striker.balls if live_state and live_state.non_striker else 0 }}</td>
+                <td id="comm-nonstriker-fours" class="col-mono col-right comm-chip-four">{{ live_state.non_striker.fours if live_state and live_state.non_striker else 0 }}</td>
+                <td id="comm-nonstriker-sixes" class="col-mono col-right comm-chip-six">{{ live_state.non_striker.sixes if live_state and live_state.non_striker else 0 }}</td>
+                <td id="comm-nonstriker-sr-top" class="col-mono col-right">{{ '%.1f'|format(live_state.non_striker.strike_rate) if live_state and live_state.non_striker else '0.0' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Card 3: Current Bowler (Mini Table Layout + Over Deliveries) -->
+      <div class="comm-card comm-card-bowler">
+        <div class="comm-card-title">
+          <span>🎯 CURRENT BOWLER</span>
+          <span id="comm-bowler-econ-top" style="color: var(--comm-purple); font-family: var(--comm-font-mono);">ECON: {{ '%.2f'|format(live_state.current_bowler.economy) if live_state and live_state.current_bowler else '0.00' }}</span>
+        </div>
+        <div class="comm-bowler-main">
+          <div class="comm-mini-table-wrap">
+            <table class="comm-table comm-mini-table">
+              <thead>
+                <tr>
+                  <th style="width: 45%; text-align: left;">BOWLER</th>
+                  <th class="col-right" style="width: 11%;">O</th>
+                  <th class="col-right" style="width: 11%;">M</th>
+                  <th class="col-right" style="width: 11%;">R</th>
+                  <th class="col-right" style="width: 11%;">W</th>
+                  <th class="col-right" style="width: 11%;">ECO</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr id="comm-bowler-box" class="comm-mini-row-bowler">
+                  <td style="text-align: left;">
+                    <span id="comm-bowler-name" class="comm-mini-player-name">{{ live_state.current_bowler.name if live_state and live_state.current_bowler else 'Bowler -' }}</span>
+                  </td>
+                  <td id="comm-bowler-overs" class="col-mono col-right">{{ live_state.current_bowler.overs if live_state and live_state.current_bowler else '0.0' }}</td>
+                  <td id="comm-bowler-maidens" class="col-mono col-right">{{ live_state.current_bowler.maidens if live_state and live_state.current_bowler else 0 }}</td>
+                  <td id="comm-bowler-runs" class="col-mono col-right">{{ live_state.current_bowler.runs if live_state and live_state.current_bowler else 0 }}</td>
+                  <td id="comm-bowler-wickets" class="col-mono col-right comm-mini-wickets">{{ live_state.current_bowler.wickets if live_state and live_state.current_bowler else 0 }}</td>
+                  <td id="comm-bowler-econ" class="col-mono col-right">{{ '%.2f'|format(live_state.current_bowler.economy) if live_state and live_state.current_bowler else '0.00' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- This Over Deliveries in Current Bowler Card -->
+          <div class="comm-bowler-over-container">
+            <span class="comm-bowler-over-lbl">OVER:</span>
+            <div id="comm-bowler-over-chips" class="comm-over-chips-container">
+              <span class="comm-ball-chip chip-0">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Match Situation / Chase Equation -->
+      <div class="comm-card comm-card-situation">
+        <div class="comm-card-title">
+          <span>📊 MATCH SITUATION</span>
+          <span id="comm-situation-stage-tag" style="color: var(--comm-gold);">1ST INNINGS</span>
+        </div>
+        <div class="comm-situation-body">
+          <div id="comm-equation-text" class="comm-equation-main">
+            {{ match.team1.name if match.team1 else 'Team 1' }} setting the target
+          </div>
+          <div class="comm-situation-stats">
+            <div>TARGET: <strong id="comm-situation-target" style="color: var(--comm-gold);">-</strong></div>
+            <div>NEED: <strong id="comm-situation-need" style="color: var(--comm-green);">-</strong></div>
+            <div>BALLS LEFT: <strong id="comm-situation-balls-left">-</strong></div>
+            <div>RRR: <strong id="comm-situation-rrr" style="color: var(--comm-gold);">-</strong></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =======================================================================
+         3. MIDDLE TABLES ROW (All Batsmen | All Bowlers)
+         ======================================================================= -->
+    <section class="comm-row-tables">
+      
+      <!-- ALL BATSMEN TABLE -->
+      <div class="comm-table-card comm-table-batters-card">
+        <div class="comm-table-header-title">
+          <div class="comm-tbl-hdr-left">
+            <span class="comm-tbl-icon">🏏</span>
+            <span class="comm-tbl-main-title">ALL BATSMEN</span>
+            <span class="comm-tbl-team-tag" id="comm-batting-team-table-title">{{ live_state.batting_team if live_state else 'Batting Team' }}</span>
+          </div>
+          <div class="comm-tbl-hdr-right">
+            <span id="comm-batters-summary-badge" class="comm-tbl-pill-badge">BATTING LINEUP</span>
+          </div>
+        </div>
+        <div class="comm-table-scroll-wrapper">
+          <table class="comm-table">
+            <thead>
+              <tr>
+                <th style="width: 45%; text-align: left;">BATSMAN</th>
+                <th class="col-right" style="width: 11%;">R</th>
+                <th class="col-right" style="width: 11%;">B</th>
+                <th class="col-right" style="width: 11%;">4s</th>
+                <th class="col-right" style="width: 11%;">6s</th>
+                <th class="col-right" style="width: 11%;">SR</th>
+              </tr>
+            </thead>
+            <tbody id="comm-all-batters-tbody">
+              <!-- Dynamically rendered rows -->
+              <tr><td colspan="6" style="text-align: center; color: var(--comm-text-dim); padding: 14px;">Loading lineup...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ALL BOWLERS TABLE -->
+      <div class="comm-table-card comm-table-bowlers-card">
+        <div class="comm-table-header-title">
+          <div class="comm-tbl-hdr-left">
+            <span class="comm-tbl-icon">🎯</span>
+            <span class="comm-tbl-main-title">ALL BOWLERS</span>
+            <span class="comm-tbl-team-tag" id="comm-bowling-team-table-title">{{ live_state.bowling_team if live_state else 'Bowling Team' }}</span>
+          </div>
+          <div class="comm-tbl-hdr-right">
+            <span id="comm-bowlers-summary-badge" class="comm-tbl-pill-badge">BOWLING ATTACK</span>
+          </div>
+        </div>
+        <div class="comm-table-scroll-wrapper">
+          <table class="comm-table">
+            <thead>
+              <tr>
+                <th style="width: 45%; text-align: left;">BOWLER</th>
+                <th class="col-right" style="width: 11%;">O</th>
+                <th class="col-right" style="width: 11%;">M</th>
+                <th class="col-right" style="width: 11%;">R</th>
+                <th class="col-right" style="width: 11%;">W</th>
+                <th class="col-right" style="width: 11%;">ECO</th>
+              </tr>
+            </thead>
+            <tbody id="comm-all-bowlers-tbody">
+              <!-- Dynamically rendered rows -->
+              <tr><td colspan="6" style="text-align: center; color: var(--comm-text-dim); padding: 14px;">Loading bowlers...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =======================================================================
+         4. MICRO STATS ROW (This Over | Last Ball | Partnership | Extras | FoW)
+         ======================================================================= -->
+    <section class="comm-row-micro">
+      
+      <!-- THIS OVER -->
+      <div class="comm-micro-card">
+        <div class="comm-micro-title">
+          <span>THIS OVER</span>
+          <span id="comm-this-over-num" style="color: var(--comm-cyan);">OV 1</span>
+        </div>
+        <div id="comm-this-over-chips" class="comm-over-chips-container">
+          <span class="comm-ball-chip chip-0">-</span>
+        </div>
+      </div>
+
+      <!-- LAST BALL -->
+      <div class="comm-micro-card">
+        <div class="comm-micro-title">
+          <span>LAST BALL</span>
+          <span id="comm-lastball-sub">DELIVERY</span>
+        </div>
+        <div id="comm-lastball-badge" class="comm-lastball-badge tag-dot">
+          DOT BALL
+        </div>
+      </div>
+
+      <!-- PARTNERSHIP -->
+      <div class="comm-micro-card">
+        <div class="comm-micro-title">
+          <span>CURRENT PARTNERSHIP</span>
+          <span id="comm-part-balls" style="color: var(--comm-gold);">0b</span>
+        </div>
+        <div id="comm-partnership-runs" class="comm-part-main">0 RUNS</div>
+        <div id="comm-partnership-breakdown" class="comm-part-sub">Striker: 0 | Non-Striker: 0</div>
+      </div>
+
+      <!-- EXTRAS -->
+      <div class="comm-micro-card">
+        <div class="comm-micro-title">
+          <span>EXTRAS</span>
+          <span id="comm-extras-total" class="comm-extras-total">0</span>
+        </div>
+        <div id="comm-extras-breakdown" class="comm-extras-grid">
+          <span>WD:<strong id="comm-ex-wd">0</strong></span>
+          <span>NB:<strong id="comm-ex-nb">0</strong></span>
+          <span>B:<strong id="comm-ex-b">0</strong></span>
+          <span>LB:<strong id="comm-ex-lb">0</strong></span>
+        </div>
+      </div>
+
+      <!-- FALL OF WICKETS -->
+      <div class="comm-micro-card">
+        <div class="comm-micro-title">
+          <span>FALL OF WICKETS</span>
+          <span style="color: var(--comm-red);">🔴 FoW</span>
+        </div>
+        <div id="comm-fow-list" class="comm-fow-list">
+          <span style="color: var(--comm-text-dim); font-size: 0.7rem;">No wickets fallen yet</span>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+</body>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ static_url('js/commentator.js') }}"></script>
+{% endblock %}

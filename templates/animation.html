@@ -1,0 +1,2146 @@
+{% extends "base.html" %}
+
+{% block title %}Animation Dashboard - Match #{{ match.id }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Broadcast Studio Control Room Styling - Blue Theme */
+  :root {
+    --studio-bg: #071329;
+    --studio-card: #0c1e38;
+    --studio-card-glow: rgba(59, 130, 246, 0.2);
+    --studio-border: transparent;
+    --gold-gradient: linear-gradient(135deg, #f59e0b, #fbbf24, #fde047);
+    --electric-gradient: linear-gradient(135deg, #06b6d4, #10b981, #34d399);
+  }
+
+  body {
+    background: radial-gradient(circle at 50% 0%, #0c1f3d 0%, #071329 55%, #030a17 100%) !important;
+  }
+
+  .animation-dashboard-container {
+    max-width: 960px;
+    margin: 1.5rem auto 3rem;
+    padding: 0 1rem;
+  }
+
+  /* Control Panel Header */
+  .studio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border: none !important;
+  }
+
+  .studio-title-block {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .studio-icon-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(16, 185, 129, 0.2));
+    border: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+  }
+
+  .studio-title {
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #ffffff 40%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+    line-height: 1.1;
+  }
+
+  .studio-subtitle {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .status-indicator-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: rgba(16, 185, 129, 0.12);
+    border: none !important;
+    color: #34d399;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+  }
+
+  .status-indicator-live::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: livePulse 1.8s ease-in-out infinite;
+  }
+
+  @keyframes livePulse {
+
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.4;
+      transform: scale(0.8);
+    }
+  }
+
+  /* Target Live View Match Card */
+  .match-broadcast-card {
+    background: radial-gradient(circle at 50% 0%, rgba(20, 48, 88, 0.75) 0%, rgba(10, 24, 48, 0.95) 100%);
+    border: none !important;
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 16px 35px rgba(0, 0, 0, 0.6);
+  }
+
+  .match-broadcast-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.6), transparent);
+  }
+
+  .card-top-tag {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-tag-label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .match-pill-id {
+    background: rgba(255, 255, 255, 0.08);
+    border: none !important;
+    padding: 0.2rem 0.65rem;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: #e2e8f0;
+  }
+
+  /* Teams Battle Row */
+  .teams-faceoff-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.5rem 0;
+  }
+
+  .team-unit {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .team-unit.team-unit-right {
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+
+  .team-avatar-box {
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    background: #081426;
+    box-shadow: 0 0 25px rgba(6, 182, 212, 0.5), inset 0 0 15px rgba(6, 182, 212, 0.35);
+    border: 2px solid rgba(56, 189, 248, 0.75) !important;
+    animation: neonRingPulseCyan 3s ease-in-out infinite alternate;
+  }
+
+  .team-avatar-box::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #06b6d4, #3b82f6, #10b981, #06b6d4);
+    filter: blur(8px);
+    opacity: 0.85;
+    z-index: 0;
+    animation: neonRotateGlow 4s linear infinite;
+    pointer-events: none;
+  }
+
+  .team-avatar-box.team-avatar-right {
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.55), inset 0 0 15px rgba(245, 158, 11, 0.35);
+    border: 2px solid rgba(251, 191, 36, 0.75) !important;
+    animation: neonRingPulseAmber 3s ease-in-out infinite alternate;
+  }
+
+  .team-avatar-box.team-avatar-right::before {
+    background: conic-gradient(from 0deg, #f59e0b, #ef4444, #ec4899, #f59e0b);
+  }
+
+  .team-avatar-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #0c1e38;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .team-avatar-box img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+  }
+
+  @keyframes neonRingPulseCyan {
+    0% {
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.4), inset 0 0 10px rgba(6, 182, 212, 0.25);
+    }
+
+    100% {
+      box-shadow: 0 0 35px rgba(6, 182, 212, 0.85), 0 0 55px rgba(56, 189, 248, 0.45), inset 0 0 20px rgba(6, 182, 212, 0.55);
+    }
+  }
+
+  @keyframes neonRingPulseAmber {
+    0% {
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.4), inset 0 0 10px rgba(245, 158, 11, 0.25);
+    }
+
+    100% {
+      box-shadow: 0 0 35px rgba(245, 158, 11, 0.85), 0 0 55px rgba(239, 68, 68, 0.45), inset 0 0 20px rgba(245, 158, 11, 0.55);
+    }
+  }
+
+  @keyframes neonRotateGlow {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .team-initials-fallback {
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+  }
+
+  .team-name-text {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  .team-side-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.08em;
+    margin-top: 0.2rem;
+  }
+
+  .faceoff-vs-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: none !important;
+    border-radius: 9999px;
+  }
+
+  .vs-badge-text {
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    font-weight: 950;
+    letter-spacing: 0.1em;
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .match-bottom-status-bar {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border: none !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .target-liveview-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(239, 68, 68, 0.12);
+    border: none !important;
+    color: #fca5a5;
+    padding: 0.4rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .target-liveview-link:hover {
+    background: rgba(239, 68, 68, 0.25);
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  /* Control Panel Actions Deck */
+  .control-panel-deck {
+    background: var(--studio-card);
+    border: none !important;
+    border-radius: 24px;
+    padding: 2.2rem;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    position: relative;
+  }
+
+  .deck-section-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #94a3b8;
+    margin-bottom: 0.5rem;
+  }
+
+  .deck-section-desc {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 2rem;
+    max-width: 550px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* GIGANTIC VS TRIGGER BUTTON */
+  .btn-vs-broadcast {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 1.4rem 2.5rem;
+    font-size: 1.85rem;
+    font-weight: 950;
+    font-family: var(--font-sans);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+    border: none !important;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 10px 35px rgba(245, 158, 11, 0.35), 0 0 20px rgba(245, 158, 11, 0.2);
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+  }
+
+  .btn-vs-broadcast::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(90deg, #f59e0b, #ef4444, #3b82f6, #10b981, #f59e0b);
+    background-size: 300% 300%;
+    border-radius: 20px;
+    z-index: -1;
+    animation: borderGlowFlow 4s linear infinite;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+  }
+
+  .btn-vs-broadcast:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 18px 45px rgba(245, 158, 11, 0.55), 0 0 30px rgba(245, 158, 11, 0.4);
+    color: #ffffff;
+  }
+
+  .btn-vs-broadcast:hover::before {
+    opacity: 1;
+  }
+
+  .btn-vs-broadcast:active {
+    transform: translateY(1px) scale(0.97);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+  }
+
+  .btn-vs-broadcast.broadcasting {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    border: none !important;
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.7) !important;
+    pointer-events: none;
+  }
+
+  /* GIGANTIC TEAMS, TOSS, BATSMEN & REQUIRED RUNS TRIGGER BUTTONS */
+  .main-trigger-duo-grid,
+  .main-trigger-trio-grid,
+  .main-trigger-quad-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+    gap: 1.15rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 1100px) {
+    .main-trigger-quad-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+
+    .main-trigger-duo-grid,
+    .main-trigger-trio-grid,
+    .main-trigger-quad-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* GIGANTIC TOSS TRIGGER BUTTON */
+  .btn-toss-broadcast {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+    padding: 1.4rem 1.4rem;
+    font-size: 1.85rem;
+    font-weight: 950;
+    font-family: var(--font-sans);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: linear-gradient(135deg, #1e1b4b 0%, #451a03 50%, #1e1b4b 100%);
+    border: none !important;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 10px 35px rgba(245, 158, 11, 0.35), 0 0 20px rgba(245, 158, 11, 0.2);
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+    white-space: nowrap !important;
+  }
+
+  .btn-toss-broadcast::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(90deg, #f59e0b, #fbbf24, #10b981, #d97706, #f59e0b);
+    background-size: 300% 300%;
+    border-radius: 20px;
+    z-index: -1;
+    animation: borderGlowFlow 4s linear infinite;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+  }
+
+  .btn-toss-broadcast:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 18px 45px rgba(245, 158, 11, 0.55), 0 0 30px rgba(245, 158, 11, 0.4);
+    color: #ffffff;
+  }
+
+  .btn-toss-broadcast:hover::before {
+    opacity: 1;
+  }
+
+  .btn-toss-broadcast:active {
+    transform: translateY(1px) scale(0.97);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+  }
+
+  .btn-toss-broadcast.is-playing-active {
+    background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 50%, #991b1b 100%) !important;
+    border: none !important;
+    box-shadow: 0 0 45px rgba(239, 68, 68, 0.85), 0 0 20px rgba(239, 68, 68, 0.5) !important;
+    animation: activeGlowPulse 1.4s infinite alternate !important;
+    cursor: pointer !important;
+  }
+
+  .btn-teams-broadcast {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+    padding: 1.4rem 1.6rem;
+    font-size: 1.85rem;
+    font-weight: 950;
+    font-family: var(--font-sans);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+    border: none !important;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 10px 35px rgba(59, 130, 246, 0.35), 0 0 20px rgba(59, 130, 246, 0.2);
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+  }
+
+  .btn-teams-broadcast::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981, #6366f1, #3b82f6);
+    background-size: 300% 300%;
+    border-radius: 20px;
+    z-index: -1;
+    animation: borderGlowFlow 4s linear infinite;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+  }
+
+  .btn-teams-broadcast:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 18px 45px rgba(59, 130, 246, 0.55), 0 0 30px rgba(59, 130, 246, 0.4);
+    color: #ffffff;
+  }
+
+  .btn-teams-broadcast:hover::before {
+    opacity: 1;
+  }
+
+  .btn-teams-broadcast:active {
+    transform: translateY(1px) scale(0.97);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-teams-broadcast.is-playing-active {
+    background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 50%, #991b1b 100%) !important;
+    border: none !important;
+    box-shadow: 0 0 45px rgba(239, 68, 68, 0.85), 0 0 20px rgba(239, 68, 68, 0.5) !important;
+    animation: activeGlowPulse 1.4s infinite alternate !important;
+    cursor: pointer !important;
+  }
+
+  /* GIGANTIC BATSMEN TRIGGER BUTTON */
+  .btn-batsmen-broadcast {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+    padding: 1.4rem 1.6rem;
+    font-size: 1.85rem;
+    font-weight: 950;
+    font-family: var(--font-sans);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #064e3b 100%);
+    border: none !important;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 10px 35px rgba(16, 185, 129, 0.35), 0 0 20px rgba(16, 185, 129, 0.2);
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+    white-space: nowrap !important;
+  }
+
+  .btn-batsmen-broadcast::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(90deg, #10b981, #06b6d4, #eab308, #10b981);
+    background-size: 300% 300%;
+    border-radius: 20px;
+    z-index: -1;
+    animation: borderGlowFlow 4s linear infinite;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+  }
+
+  .btn-batsmen-broadcast:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 18px 45px rgba(16, 185, 129, 0.55), 0 0 30px rgba(16, 185, 129, 0.4);
+    color: #ffffff;
+  }
+
+  .btn-batsmen-broadcast:hover::before {
+    opacity: 1;
+  }
+
+  .btn-batsmen-broadcast:active {
+    transform: translateY(1px) scale(0.97);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+  }
+
+  .btn-batsmen-broadcast.is-playing-active {
+    background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 50%, #991b1b 100%) !important;
+    border: none !important;
+    box-shadow: 0 0 45px rgba(239, 68, 68, 0.85), 0 0 20px rgba(239, 68, 68, 0.5) !important;
+    animation: activeGlowPulse 1.4s infinite alternate !important;
+    cursor: pointer !important;
+  }
+
+  /* GIGANTIC REQUIRED RUNS / TARGET EQUATION TRIGGER BUTTON */
+  .btn-required-runs-broadcast {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+    padding: 1.4rem 1.4rem;
+    font-size: 1.65rem;
+    font-weight: 950;
+    font-family: var(--font-sans);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: linear-gradient(135deg, #451a03 0%, #b45309 50%, #1c1917 100%);
+    border: none !important;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 10px 35px rgba(245, 158, 11, 0.4), 0 0 20px rgba(217, 119, 6, 0.25);
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    white-space: nowrap !important;
+  }
+
+  .btn-required-runs-broadcast::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(90deg, #f59e0b, #ef4444, #10b981, #06b6d4, #f59e0b);
+    background-size: 300% 300%;
+    border-radius: 20px;
+    z-index: -1;
+    animation: borderGlowFlow 4s linear infinite;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+  }
+
+  .btn-required-runs-broadcast:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 18px 45px rgba(245, 158, 11, 0.65), 0 0 30px rgba(217, 119, 6, 0.45);
+    color: #ffffff;
+  }
+
+  .btn-required-runs-broadcast:hover::before {
+    opacity: 1;
+  }
+
+  .btn-required-runs-broadcast:active {
+    transform: translateY(1px) scale(0.97);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+  }
+
+  .btn-required-runs-broadcast.is-playing-active {
+    background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 50%, #991b1b 100%) !important;
+    border: none !important;
+    box-shadow: 0 0 45px rgba(239, 68, 68, 0.85), 0 0 20px rgba(239, 68, 68, 0.5) !important;
+    animation: activeGlowPulse 1.4s infinite alternate !important;
+    cursor: pointer !important;
+  }
+
+  .teams-quick-squad-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+  }
+
+  .btn-squad-action-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.4rem;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.08);
+    border: none !important;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-squad-action-pill:hover {
+    background: rgba(59, 130, 246, 0.25);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-squad-action-pill.btn-close-team-display {
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;
+  }
+
+  .btn-squad-action-pill.btn-close-team-display:hover {
+    background: rgba(239, 68, 68, 0.28);
+    color: #ffffff;
+    box-shadow: 0 6px 15px rgba(239, 68, 68, 0.3);
+  }
+
+  @keyframes thunderZap {
+
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+    }
+
+    15% {
+      transform: scale(1.25) rotate(-10deg);
+      filter: drop-shadow(0 0 20px #fbbf24);
+    }
+
+    30% {
+      transform: scale(1) rotate(0deg);
+    }
+  }
+
+  @keyframes borderGlowFlow {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  /* Broadcast Feedback Toast & Signal Log */
+  .broadcast-feedback-status {
+    margin-top: 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.35);
+    border: none !important;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    transition: all 0.3s ease;
+  }
+
+  .broadcast-feedback-status.active-success {
+    background: rgba(16, 185, 129, 0.15);
+    border: none !important;
+    color: #34d399;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #64748b;
+  }
+
+  .status-dot.online {
+    background: #10b981;
+    box-shadow: 0 0 10px #10b981;
+  }
+
+  .status-dot.broadcasting {
+    background: #f59e0b;
+    box-shadow: 0 0 12px #f59e0b;
+    animation: pingDot 0.8s ease-in-out infinite;
+  }
+
+  @keyframes pingDot {
+
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    50% {
+      transform: scale(1.6);
+      opacity: 0.4;
+    }
+  }
+
+  /* Helpful Info Guidance */
+  .control-hints {
+    margin-top: 2rem;
+    padding: 1.25rem;
+    background: rgba(15, 23, 42, 0.5);
+    border: none !important;
+    border-radius: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    text-align: left;
+  }
+
+  .hint-icon {
+    font-size: 1.4rem;
+  }
+
+  .hint-text {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+
+  .hint-text strong {
+    color: #f1f5f9;
+  }
+
+  /* Player Presentation Animation Buttons Grid */
+  .player-broadcast-deck-section {
+    margin-top: 2rem;
+    padding-top: 1.75rem;
+    border: none !important;
+  }
+
+  .player-deck-subheading {
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #94a3b8;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .player-anim-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+  }
+
+  .btn-player-broadcast {
+    position: relative;
+    padding: 1.2rem 1.25rem;
+    border-radius: 18px;
+    background: radial-gradient(circle at 50% 0%, rgba(20, 48, 88, 0.75) 0%, rgba(10, 24, 48, 0.95) 100%);
+    border: none !important;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .btn-player-broadcast::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.08), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .btn-player-broadcast:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 16px 35px rgba(0, 0, 0, 0.6);
+  }
+
+  .btn-player-broadcast:hover::before {
+    opacity: 1;
+  }
+
+  .btn-player-broadcast:active {
+    transform: translateY(1px) scale(0.98);
+  }
+
+  /* 1. STRIKER BUTTON STYLING */
+  .btn-striker-broadcast {
+    border: none !important;
+  }
+
+  .btn-striker-broadcast:hover {
+    box-shadow: 0 16px 35px rgba(16, 185, 129, 0.3), 0 0 25px rgba(16, 185, 129, 0.2);
+  }
+
+  .btn-striker-broadcast .btn-player-icon-box {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.25));
+    border: none !important;
+    color: #34d399;
+  }
+
+  /* 2. NON-STRIKER BUTTON STYLING */
+  .btn-nonstriker-broadcast {
+    border: none !important;
+  }
+
+  .btn-nonstriker-broadcast:hover {
+    box-shadow: 0 16px 35px rgba(99, 102, 241, 0.3), 0 0 25px rgba(99, 102, 241, 0.2);
+  }
+
+  .btn-nonstriker-broadcast .btn-player-icon-box {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25));
+    border: none !important;
+    color: #a5b4fc;
+  }
+
+  /* 3. BOWLER BUTTON STYLING */
+  .btn-bowler-broadcast {
+    border: none !important;
+  }
+
+  .btn-bowler-broadcast:hover {
+    box-shadow: 0 16px 35px rgba(245, 158, 11, 0.3), 0 0 25px rgba(245, 158, 11, 0.2);
+  }
+
+  .btn-bowler-broadcast .btn-player-icon-box {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.25));
+    border: none !important;
+    color: #fbbf24;
+  }
+
+  .btn-player-broadcast.broadcasting {
+    background: linear-gradient(135deg, #059669 0%, #0d9488 100%) !important;
+    border: none !important;
+    box-shadow: 0 0 35px rgba(52, 211, 153, 0.6) !important;
+  }
+
+  /* ACTIVE PLAYING / TOGGLE STOP STATE STYLING */
+  .btn-vs-broadcast.is-playing-active {
+    background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 50%, #991b1b 100%) !important;
+    border: none !important;
+    box-shadow: 0 0 45px rgba(239, 68, 68, 0.85), 0 0 20px rgba(239, 68, 68, 0.5) !important;
+    animation: activeGlowPulse 1.4s infinite alternate !important;
+    cursor: pointer !important;
+  }
+
+  .btn-player-broadcast.is-playing-active {
+    background: linear-gradient(135deg, rgba(127, 29, 29, 0.88) 0%, rgba(220, 38, 38, 0.78) 100%) !important;
+    border: none !important;
+    box-shadow: 0 0 35px rgba(239, 68, 68, 0.75), 0 0 15px rgba(239, 68, 68, 0.45) !important;
+    animation: activeGlowPulse 1.4s infinite alternate !important;
+    cursor: pointer !important;
+  }
+
+  .btn-player-broadcast.is-playing-active .btn-player-action-tag {
+    background: #ef4444 !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.8) !important;
+    font-weight: 900 !important;
+  }
+
+  @keyframes activeGlowPulse {
+    0% {
+      transform: scale(1);
+      filter: brightness(1);
+    }
+
+    100% {
+      transform: scale(1.02);
+      filter: brightness(1.18);
+    }
+  }
+
+  /* Dedicated Master Stop Action Bar */
+  .master-stop-action-bar {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-master-stop-anim {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1.8rem;
+    font-size: 0.92rem;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  .btn-master-stop-anim:hover {
+    background: rgba(239, 68, 68, 0.28);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(239, 68, 68, 0.35);
+  }
+
+  .btn-master-stop-anim:active {
+    transform: translateY(1px);
+  }
+
+  /* Live View Scoreboard Handle & Control Bar */
+  .liveview-master-handle-card {
+    margin-bottom: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, rgba(6, 78, 59, 0.45) 0%, rgba(15, 23, 42, 0.9) 60%, rgba(12, 74, 110, 0.4) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 25px rgba(16, 185, 129, 0.15);
+  }
+
+  .liveview-handle-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .liveview-handle-info {
+    flex: 1;
+    min-width: 260px;
+  }
+
+  .liveview-handle-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.76rem;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    color: #34d399;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+  }
+
+  .live-dot-pulse {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 10px #10b981;
+    animation: liveDotPulse 1.2s infinite alternate;
+  }
+
+  @keyframes liveDotPulse {
+    0% { transform: scale(0.9); opacity: 0.7; }
+    100% { transform: scale(1.3); opacity: 1; }
+  }
+
+  .liveview-handle-title {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+  }
+
+  .liveview-handle-sub {
+    font-size: 0.84rem;
+    color: #94a3b8;
+    margin-top: 0.2rem;
+    line-height: 1.4;
+  }
+
+  .liveview-handle-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-show-liveview-master {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1.6rem;
+    background: linear-gradient(135deg, #059669 0%, #10b981 50%, #047857 100%);
+    color: #ffffff;
+    border: none !important;
+    border-radius: 14px;
+    cursor: pointer;
+    font-weight: 800;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45), 0 0 15px rgba(52, 211, 153, 0.3);
+  }
+
+  .btn-show-liveview-master:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #059669 100%);
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.65), 0 0 25px rgba(52, 211, 153, 0.5);
+  }
+
+  .btn-show-liveview-master:active {
+    transform: translateY(1px);
+  }
+
+  .btn-icon-screen {
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+
+  .btn-text-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .btn-main-label {
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+  }
+
+  .btn-sub-label {
+    font-size: 0.68rem;
+    opacity: 0.85;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+  }
+
+  .btn-badge-live {
+    padding: 0.2rem 0.55rem;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 900;
+    color: #a7f3d0;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-liveview-handle-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 850;
+    letter-spacing: 0.04em;
+    color: #ffffff;
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    border: none !important;
+    border-radius: 9999px;
+    cursor: pointer;
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.4);
+    transition: all 0.2s ease;
+  }
+
+  .btn-liveview-handle-header:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.65);
+    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  }
+
+  .btn-player-icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: none !important;
+  }
+
+  .btn-player-text-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    width: 100%;
+    overflow: visible !important;
+  }
+
+  .btn-player-role-label {
+    font-size: 0.85rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ffffff;
+    white-space: nowrap !important;
+  }
+
+  .btn-player-name-val {
+    font-size: clamp(0.78rem, 1vw, 0.92rem);
+    font-weight: 700;
+    color: #94a3b8;
+    max-width: 100% !important;
+    width: 100%;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: keep-all !important;
+    text-align: center;
+  }
+
+  .btn-player-action-tag {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: none !important;
+    color: #e2e8f0;
+    margin-top: 0.2rem;
+  }
+
+  /* BOUNDARY & OUT ANIMATION BUTTONS */
+  .btn-boundary-four {
+    border: none !important;
+  }
+
+  .btn-boundary-four:hover {
+    box-shadow: 0 16px 35px rgba(52, 211, 153, 0.35), 0 0 25px rgba(52, 211, 153, 0.2);
+  }
+
+  .btn-boundary-four .btn-player-icon-box {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(52, 211, 153, 0.2));
+    border: none !important;
+    color: #34d399;
+  }
+
+  .btn-boundary-six {
+    border: none !important;
+  }
+
+  .btn-boundary-six:hover {
+    box-shadow: 0 16px 35px rgba(168, 85, 247, 0.35), 0 0 25px rgba(168, 85, 247, 0.2);
+  }
+
+  .btn-boundary-six .btn-player-icon-box {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.2));
+    border: none !important;
+    color: #e879f9;
+  }
+
+  .btn-boundary-out {
+    border: none !important;
+  }
+
+  .btn-boundary-out:hover {
+    box-shadow: 0 16px 35px rgba(239, 68, 68, 0.35), 0 0 25px rgba(239, 68, 68, 0.2);
+  }
+
+  .btn-boundary-out .btn-player-icon-box {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.2));
+    border: none !important;
+    color: #fca5a5;
+  }
+
+  /* MILESTONE & SPECIAL ANIMATION BUTTONS */
+  .milestone-anim-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.1rem;
+  }
+
+  .btn-milestone-50 {
+    border: none !important;
+  }
+
+  .btn-milestone-50:hover {
+    box-shadow: 0 16px 35px rgba(245, 158, 11, 0.35), 0 0 25px rgba(245, 158, 11, 0.2);
+  }
+
+  .btn-milestone-50 .btn-player-icon-box {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(251, 191, 36, 0.2));
+    border: none !important;
+    color: #fbbf24;
+  }
+
+  .btn-milestone-100 {
+    border: none !important;
+  }
+
+  .btn-milestone-100:hover {
+    box-shadow: 0 16px 35px rgba(56, 189, 248, 0.35), 0 0 25px rgba(56, 189, 248, 0.2);
+  }
+
+  .btn-milestone-100 .btn-player-icon-box {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(129, 140, 248, 0.2));
+    border: none !important;
+    color: #38bdf8;
+  }
+
+  .btn-milestone-freehit {
+    border: none !important;
+  }
+
+  .btn-milestone-freehit:hover {
+    box-shadow: 0 16px 35px rgba(244, 63, 94, 0.35), 0 0 25px rgba(244, 63, 94, 0.2);
+  }
+
+  .btn-milestone-freehit .btn-player-icon-box {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.3), rgba(251, 113, 133, 0.2));
+    border: none !important;
+    color: #fb7185;
+  }
+
+  .btn-milestone-champions {
+    border: none !important;
+  }
+
+  .btn-milestone-champions:hover {
+    box-shadow: 0 16px 35px rgba(234, 179, 8, 0.45), 0 0 30px rgba(234, 179, 8, 0.3);
+  }
+
+  .btn-milestone-champions .btn-player-icon-box {
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.35), rgba(245, 158, 11, 0.2));
+    border: none !important;
+    color: #fde047;
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 900px) {
+    .milestone-anim-buttons-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .teams-faceoff-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .player-anim-buttons-grid,
+    .milestone-anim-buttons-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .team-unit.team-unit-right {
+      flex-direction: row-reverse;
+      text-align: right;
+    }
+
+    .faceoff-vs-pill {
+      margin: 0.5rem auto;
+    }
+
+    .btn-vs-broadcast {
+      font-size: 1.5rem;
+      padding: 1.1rem 1.8rem;
+    }
+  }
+
+  /* ==========================================================================
+     TEXT DISPLAY BROADCAST SECTION STYLING (ANIMATION DASHBOARD)
+     ========================================================================== */
+  .text-display-broadcast-section {
+    margin-top: 2.2rem;
+    padding: 1.8rem 2rem;
+    background: radial-gradient(circle at 50% 0%, rgba(20, 48, 88, 0.85) 0%, rgba(10, 24, 48, 0.98) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.25) !important;
+    border-radius: 24px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(56, 189, 248, 0.15);
+    position: relative;
+    overflow: hidden;
+    text-align: left;
+  }
+
+  .text-display-broadcast-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.8), transparent);
+  }
+
+  .text-display-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1.1rem;
+  }
+
+  .text-display-title {
+    font-size: 1.05rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .text-display-title .text-title-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #38bdf8;
+    box-shadow: 0 0 10px #38bdf8;
+    animation: livePulse 1.8s infinite ease-in-out;
+  }
+
+  .text-display-subtitle {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #94a3b8;
+  }
+
+  .custom-text-textarea-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  .custom-text-textarea {
+    width: 100% !important;
+    min-height: 110px !important;
+    background: #040c1c !important;
+    border: 2px solid rgba(56, 189, 248, 0.35) !important;
+    border-radius: 16px !important;
+    padding: 1.1rem 1.4rem !important;
+    font-family: inherit !important;
+    font-size: 1.18rem !important;
+    font-weight: 750 !important;
+    color: #ffffff !important;
+    resize: vertical !important;
+    outline: none !important;
+    box-shadow: inset 0 3px 12px rgba(0, 0, 0, 0.8), 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.25s ease !important;
+    line-height: 1.5 !important;
+    box-sizing: border-box !important;
+    display: block !important;
+  }
+
+  .custom-text-textarea:focus {
+    border-color: #38bdf8 !important;
+    background: #06142e !important;
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.4), inset 0 2px 10px rgba(0, 0, 0, 0.8) !important;
+  }
+
+  .custom-text-textarea::placeholder {
+    color: rgba(148, 163, 184, 0.55) !important;
+    font-weight: 500 !important;
+    font-size: 0.98rem !important;
+  }
+
+  /* Preset Pills Bar */
+  .text-presets-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .text-presets-label {
+    font-size: 0.78rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin-right: 0.2rem;
+  }
+
+  .btn-text-preset {
+    padding: 0.42rem 0.95rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    font-weight: 750;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+  }
+
+  .btn-text-preset:hover {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: rgba(56, 189, 248, 0.6) !important;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);
+  }
+
+  .btn-text-preset:active {
+    transform: translateY(1px);
+  }
+
+  .btn-text-preset.btn-preset-clear {
+    background: rgba(239, 68, 68, 0.14);
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    color: #fca5a5;
+  }
+
+  .btn-text-preset.btn-preset-clear:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+  }
+
+  /* Main Action Buttons for Text Display */
+  .text-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1.1rem;
+    margin-top: 1.4rem;
+  }
+
+  .btn-show-custom-text {
+    padding: 1.15rem 2.2rem;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #075985 100%);
+    border: none !important;
+    color: #ffffff;
+    font-size: 1.35rem;
+    font-weight: 950;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+    box-shadow: 0 10px 30px rgba(2, 132, 199, 0.45);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+  }
+
+  .btn-show-custom-text:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 16px 40px rgba(2, 132, 199, 0.65), 0 0 25px rgba(56, 189, 248, 0.4);
+    color: #ffffff;
+  }
+
+  .btn-show-custom-text:active {
+    transform: translateY(1px) scale(0.98);
+  }
+
+  .btn-show-custom-text.is-playing-active {
+    background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 50%, #991b1b 100%) !important;
+    box-shadow: 0 0 45px rgba(239, 68, 68, 0.85) !important;
+    animation: activeGlowPulse 1.4s infinite alternate !important;
+  }
+
+  .btn-hide-custom-text {
+    padding: 1.15rem 1.8rem;
+    border-radius: 18px;
+    background: rgba(239, 68, 68, 0.14);
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    color: #fca5a5;
+    font-size: 1.05rem;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+
+  .btn-hide-custom-text:hover {
+    background: rgba(239, 68, 68, 0.3);
+    color: #ffffff;
+    border-color: rgba(239, 68, 68, 0.7) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.35);
+  }
+
+  .btn-hide-custom-text:active {
+    transform: translateY(1px);
+  }
+
+  @media (max-width: 640px) {
+    .text-display-broadcast-section {
+      padding: 1.25rem;
+    }
+
+    .text-actions-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .btn-show-custom-text {
+      font-size: 1.15rem;
+      padding: 1rem 1.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set team1_captain = (match.team1.players | selectattr('is_captain', 'equalto', True) | first) or
+(match.team1.players[0] if match.team1.players else none) %}
+{% set team2_captain = (match.team2.players | selectattr('is_captain', 'equalto', True) | first) or
+(match.team2.players[0] if match.team2.players else none) %}
+<div id="animation-match-data" data-match-id="{{ match.id }}" data-tournament-id="{{ match.tournament_id }}"
+  data-team1-id="{{ match.team1.id }}" data-team1-name="{{ match.team1.name }}"
+  data-team1-short="{{ match.team1.short_name or '' }}" data-team1-logo="{{ match.team1.logo_url or '' }}"
+  data-team1-captain-name="{{ team1_captain.name if team1_captain else '' }}"
+  data-team1-captain-photo="{{ team1_captain.photo_url if team1_captain and team1_captain.photo_url else '' }}"
+  data-team2-id="{{ match.team2.id }}" data-team2-name="{{ match.team2.name }}"
+  data-team2-short="{{ match.team2.short_name or '' }}" data-team2-logo="{{ match.team2.logo_url or '' }}"
+  data-team2-captain-name="{{ team2_captain.name if team2_captain else '' }}"
+  data-team2-captain-photo="{{ team2_captain.photo_url if team2_captain and team2_captain.photo_url else '' }}"
+  data-status="{{ match.status }}">
+</div>
+
+<div class="animation-dashboard-container">
+
+  <!-- TOP HEADER -->
+  <div class="studio-header">
+    <div class="studio-title-block">
+      <div class="studio-icon-badge">⚡</div>
+      <div>
+        <h1 class="studio-title">ANIMATION DASHBOARD</h1>
+        <div class="studio-subtitle">
+          <span>Live Broadcast Control Room</span>
+          <span>•</span>
+          <span id="ws-channel-status" class="status-indicator-live">Connecting...</span>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+      <button id="btn-header-show-live" type="button" class="btn-liveview-handle-header" onclick="showLiveViewScoreboard()"
+        title="Stop any active animation and immediately show the Live View scoreboard">
+        <span class="live-dot-pulse"></span>
+        <span>📺 SHOW LIVE VIEW</span>
+      </button>
+      <a href="/match/{{ match.id }}/scorer" class="btn btn-secondary btn-sm">📝 Scorer Screen</a>
+      <a href="/match/{{ match.id }}/live" target="_blank" class="target-liveview-link"
+        title="Open Live View in New Tab">🔴 Open Live View</a>
+      <a href="/tournament/{{ match.tournament_id }}" class="btn btn-secondary btn-sm">🏆 Tournament</a>
+    </div>
+  </div>
+
+  <!-- CURRENT MATCH INFORMATION CARD -->
+  <div class="match-broadcast-card">
+    <div class="card-top-tag">
+      <span class="card-tag-label">
+        <span>📺 LIVE VIEW MATCH CONTROLLER</span>
+      </span>
+      <span class="match-pill-id">Match #{{ match.id }} • {{ match.tournament.name }}</span>
+    </div>
+
+    <div class="teams-faceoff-grid">
+      <!-- TEAM 1 -->
+      <div class="team-unit">
+        <div class="team-avatar-box team-avatar-left">
+          <div class="team-avatar-inner">
+            {% if match.team1.logo_url %}
+            <img src="{{ match.team1.logo_url }}" alt="{{ match.team1.name }}"
+              onerror="this.parentElement.innerHTML='<span class=\'team-initials-fallback\'>{{ match.team1.short_name or match.team1.name[:2]|upper }}</span>'">
+            {% else %}
+            <span class="team-initials-fallback">{{ match.team1.short_name or match.team1.name[:2]|upper }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          <div class="team-name-text">{{ match.team1.name }}</div>
+          <div class="team-side-label">Team A</div>
+        </div>
+      </div>
+
+      <!-- VS CENTER BADGE -->
+      <div class="faceoff-vs-pill">
+        <span class="vs-badge-text">VS</span>
+      </div>
+
+      <!-- TEAM 2 -->
+      <div class="team-unit team-unit-right">
+        <div class="team-avatar-box team-avatar-right">
+          <div class="team-avatar-inner">
+            {% if match.team2.logo_url %}
+            <img src="{{ match.team2.logo_url }}" alt="{{ match.team2.name }}"
+              onerror="this.parentElement.innerHTML='<span class=\'team-initials-fallback\'>{{ match.team2.short_name or match.team2.name[:2]|upper }}</span>'">
+            {% else %}
+            <span class="team-initials-fallback">{{ match.team2.short_name or match.team2.name[:2]|upper }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          <div class="team-name-text">{{ match.team2.name }}</div>
+          <div class="team-side-label">Team B</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="match-bottom-status-bar">
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span style="color: var(--text-muted);">Status:</span>
+        <span
+          class="badge {% if match.status == 'live' %}badge-live{% elif match.status == 'completed' %}badge-completed{% else %}badge-upcoming{% endif %}"
+          style="font-weight: 800; text-transform: uppercase;">
+          {{ match.status }}
+        </span>
+        <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.4rem;">
+          ({{ match.total_overs }} Overs Match)
+        </span>
+      </div>
+
+      <div style="color: var(--text-muted); font-size: 0.82rem;">
+        Target Live Screen: <strong style="color: #fff;">/match/{{ match.id }}/live</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- BROADCAST CONTROL ACTION DECK -->
+  <div class="control-panel-deck">
+    <!-- MASTER LIVE VIEW SCOREBOARD CONTROLLER HANDLE -->
+    <div class="liveview-master-handle-card">
+      <div class="liveview-handle-content">
+        <div class="liveview-handle-info">
+          <div class="liveview-handle-badge">
+            <span class="live-dot-pulse"></span>
+            <span>LIVE VIEW SCREEN HANDLE</span>
+          </div>
+          <div class="liveview-handle-title">Live Scoreboard & Screen Controller</div>
+          <div class="liveview-handle-sub">Click below to immediately stop any active animation/video and force display the Live Scoreboard on the big screen.</div>
+        </div>
+        <div class="liveview-handle-actions">
+          <button id="btn-dashboard-show-live" type="button" class="btn-show-liveview-master" onclick="showLiveViewScoreboard()"
+            title="Immediately stop all animations and display the Live Scoreboard">
+            <span class="btn-icon-screen">📺</span>
+            <div class="btn-text-stack">
+              <span class="btn-main-label">SHOW LIVE VIEW</span>
+              <span class="btn-sub-label">STOP ANIMATION & SHOW SCOREBOARD</span>
+            </div>
+            <span class="btn-badge-live">LIVE</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="deck-section-title">BROADCAST OVERLAY CONTROLS</div>
+    <p class="deck-section-desc">
+      Trigger dynamic stadium broadcast graphics on the Live View screen. Instant real-time synchronization with Play /
+      Stop toggle support.
+    </p>
+
+    <!-- 1. MAIN BROADCAST TAKEOVERS: VS, TOSS, TEAMS & BATSMEN (PLAY & STOP TOGGLE) -->
+    <div class="main-trigger-quad-grid">
+      <!-- VS BATTLE BUTTON -->
+      <button id="btn-trigger-vs" type="button" class="btn-vs-broadcast" onclick="triggerVSAnimation()"
+        title="Click to Play, Click again to Stop/Remove">
+        <span class="vs-icon-flash">⚡</span>
+        <span id="btn-vs-text">VS BATTLE</span>
+        <span id="btn-vs-tag" class="btn-player-action-tag"
+          style="margin-left: 0.5rem; font-size: 0.75rem; background: rgba(255,255,255,0.15);">▶ PLAY</span>
+      </button>
+
+      <!-- TOSS PRESENTATION BUTTON -->
+      <button id="btn-trigger-toss" type="button" class="btn-toss-broadcast" onclick="triggerTossAnimation()"
+        title="Click to Play Toss Animation on Live View, Click again to Stop/Remove">
+        <span class="vs-icon-flash" style="font-size: 2rem;">🪙</span>
+        <span id="btn-toss-text">TOSS</span>
+        <span id="btn-toss-tag" class="btn-player-action-tag"
+          style="margin-left: 0.5rem; font-size: 0.75rem; background: rgba(255,255,255,0.15);">▶ PLAY</span>
+      </button>
+
+      <!-- TEAMS SELECTION & SQUADS BUTTON -->
+      <button id="btn-trigger-teams" type="button" class="btn-teams-broadcast" onclick="triggerTeamsAnimation()"
+        title="Click to Play Team Selection screen on Live View, Click again to Stop/Remove">
+        <span class="vs-icon-flash" style="font-size: 2rem;">👥</span>
+        <span id="btn-teams-text">TEAMS</span>
+        <span id="btn-teams-tag" class="btn-player-action-tag"
+          style="margin-left: 0.5rem; font-size: 0.75rem; background: rgba(255,255,255,0.15);">▶ PLAY</span>
+      </button>
+
+      <!-- BATSMEN (STRIKER & NON-STRIKER DUO) BUTTON -->
+      <button id="btn-trigger-batsmen-duo" type="button" class="btn-batsmen-broadcast"
+        onclick="triggerBatsmenDuoAnimation()"
+        title="Click to Play Batsmen (Striker & Non-Striker) on Live View, Click again to Stop/Remove">
+        <span class="vs-icon-flash" style="font-size: 2rem;">🏏</span>
+        <span id="btn-batsmen-text">BATSMEN</span>
+        <span id="btn-batsmen-tag" class="btn-player-action-tag"
+          style="margin-left: 0.5rem; font-size: 0.75rem; background: rgba(255,255,255,0.15);">▶ PLAY</span>
+      </button>
+
+      <!-- REQUIRED RUNS (EQUATION & TARGET) BUTTON -->
+      <button id="btn-trigger-required-runs" type="button" class="btn-required-runs-broadcast"
+        onclick="triggerRequiredRunsAnimation()"
+        title="Click to show Target & Required Runs Equation on Live View (Available in 2nd Innings)">
+        <span class="vs-icon-flash" style="font-size: 2rem;">🎯</span>
+        <span id="btn-required-runs-text">REQUIRED RUNS</span>
+        <span id="btn-required-runs-tag" class="btn-player-action-tag"
+          style="margin-left: 0.5rem; font-size: 0.75rem; background: rgba(255,255,255,0.15);">▶ PLAY</span>
+      </button>
+    </div>
+
+    <!-- QUICK TEAM SQUAD TRIGGERS & CLOSE CONTROLLER -->
+    <div class="teams-quick-squad-row">
+      <button type="button" class="btn-squad-action-pill" onclick="triggerTeamSquadAnimation(1)"
+        title="Directly display {{ match.team1.name }} Squad on Live View">
+        <span>🛡️</span>
+        <span>{{ match.team1.short_name or match.team1.name }} Squad</span>
+      </button>
+      <button type="button" class="btn-squad-action-pill" onclick="triggerTeamSquadAnimation(2)"
+        title="Directly display {{ match.team2.name }} Squad on Live View">
+        <span>🛡️</span>
+        <span>{{ match.team2.short_name or match.team2.name }} Squad</span>
+      </button>
+      <button type="button" class="btn-squad-action-pill btn-close-team-display" onclick="stopActiveAnimation()"
+        title="Close Teams / Squad display and return to scoreboard">
+        <span>⏹</span>
+        <span>CLOSE TEAM DISPLAY</span>
+      </button>
+    </div>
+
+    <!-- TEXT DISPLAY (CUSTOM FULL-SCREEN BROADCAST MESSAGE) -->
+    <div class="text-display-broadcast-section">
+      <div class="text-display-header">
+        <div class="text-display-title">
+          <span>📢</span>
+          <span>TEXT DISPLAY</span>
+        </div>
+        <div class="text-display-subtitle">
+          <span>Full-Screen Live View Announcement Graphic</span>
+        </div>
+      </div>
+
+      <textarea id="custom-text-input" class="custom-text-textarea" rows="3"
+        placeholder="Enter text here... e.g.&#10;Welcome to the Final Match!&#10;ABHI AVENGERS&#10;TARGET 120 RUNS&#10;WHAT A SIX!&#10;GOOD LUCK TEAMS!"></textarea>
+
+      <!-- Quick Preset Pills -->
+      <div class="text-presets-bar">
+        <span class="text-presets-label">⚡ Quick Presets:</span>
+        <button type="button" class="btn-text-preset" onclick="setCustomTextPreset('Welcome to the Final Match!')">✨
+          Welcome Match</button>
+        <button type="button" class="btn-text-preset" onclick="setCustomTextPreset('ABHI AVENGERS')">🔥 ABHI
+          AVENGERS</button>
+        <button type="button" class="btn-text-preset" onclick="setCustomTextPreset('TARGET 120 RUNS')">🎯 TARGET 120
+          RUNS</button>
+        <button type="button" class="btn-text-preset" onclick="setCustomTextPreset('WHAT A SIX!')">🚀 WHAT A
+          SIX!</button>
+        <button type="button" class="btn-text-preset" onclick="setCustomTextPreset('GOOD LUCK TEAMS!')">🤝 GOOD LUCK
+          TEAMS!</button>
+        <button type="button" class="btn-text-preset" style="background: rgba(239,68,68,0.15); color: #fca5a5;"
+          onclick="clearCustomTextInput()">🧹 Clear</button>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="text-actions-grid">
+        <button id="btn-trigger-custom-text" type="button" class="btn-show-custom-text"
+          onclick="triggerCustomTextAnimation()" title="Click to broadcast this text on full-screen Live View">
+          <span class="text-btn-icon">🚀</span>
+          <span id="btn-custom-text-text">SHOW</span>
+        </button>
+        <button id="btn-hide-custom-text" type="button" class="btn-hide-custom-text" onclick="hideCustomTextAnimation()"
+          title="Immediately remove custom text from Live View">
+          <span class="text-btn-icon">⏹</span>
+          <span>HIDE TEXT</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. PLAYER PRESENTATION ANIMATIONS (PLAY & STOP TOGGLE) -->
+    <div class="player-broadcast-deck-section">
+      <div class="player-deck-subheading">
+        <span>🎬 LIVE PLAYER PRESENTATIONS (CLICK TO PLAY / STOP)</span>
+      </div>
+      <div class="player-anim-buttons-grid">
+        <!-- 1. STRIKER BATSMAN BUTTON -->
+        <button id="btn-trigger-striker" type="button" class="btn-player-broadcast btn-striker-broadcast"
+          onclick="triggerStrikerAnimation()" title="Click to Play, Click again to Stop/Remove">
+          <div class="btn-player-icon-box">
+            <img src="/static/images/cricket-bat.svg" alt="Bat"
+              style="width: 28px; height: 28px; object-fit: contain; transform: rotate(-12deg); filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.7));" />
+          </div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label">STRIKER BATSMAN</span>
+            <span class="btn-player-name-val" id="dashboard-striker-name">
+              {% if live_state and live_state.striker %}{{ live_state.striker.name }}{% else %}Live Striker{% endif %}
+            </span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-striker">▶ PLAY</span>
+        </button>
+
+        <!-- 2. NON-STRIKER BATSMAN BUTTON -->
+        <button id="btn-trigger-non-striker" type="button" class="btn-player-broadcast btn-nonstriker-broadcast"
+          onclick="triggerNonStrikerAnimation()" title="Click to Play, Click again to Stop/Remove">
+          <div class="btn-player-icon-box">
+            <img src="/static/images/cricket-bat.svg" alt="Bat"
+              style="width: 28px; height: 28px; object-fit: contain; transform: rotate(-12deg); filter: drop-shadow(0 0 6px rgba(165, 180, 252, 0.7));" />
+          </div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label">NON-STRIKER BATSMAN</span>
+            <span class="btn-player-name-val" id="dashboard-nonstriker-name">
+              {% if live_state and live_state.non_striker %}{{ live_state.non_striker.name }}{% else %}Live
+              Non-Striker{% endif %}
+            </span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-non-striker">▶ PLAY</span>
+        </button>
+
+        <!-- 3. BOWLER BUTTON -->
+        <button id="btn-trigger-bowler" type="button" class="btn-player-broadcast btn-bowler-broadcast"
+          onclick="triggerBowlerAnimation()" title="Click to Play, Click again to Stop/Remove">
+          <div class="btn-player-icon-box">🎯</div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label">CURRENT BOWLER</span>
+            <span class="btn-player-name-val" id="dashboard-bowler-name">
+              {% if live_state and live_state.current_bowler %}{{ live_state.current_bowler.name }}{% else %}Live
+              Bowler{% endif %}
+            </span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-bowler">▶ PLAY</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. BOUNDARY & OUT CELEBRATIONS (PLAY & STOP TOGGLE) -->
+    <div class="player-broadcast-deck-section">
+      <div class="player-deck-subheading">
+        <span>🔥 BOUNDARY & WICKET TAKEOVERS (CLICK TO PLAY / STOP)</span>
+      </div>
+      <div class="player-anim-buttons-grid">
+        <!-- FOUR (4) -->
+        <button id="btn-trigger-four" type="button" class="btn-player-broadcast btn-boundary-four"
+          onclick="triggerFourAnimation()" title="Click to Play, Click again to Stop/Remove">
+          <div class="btn-player-icon-box">4️⃣</div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label">FOUR (4 RUNS)</span>
+            <span class="btn-player-name-val">Boundary Takeover</span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-four">▶ PLAY</span>
+        </button>
+
+        <!-- SIX (6) -->
+        <button id="btn-trigger-six" type="button" class="btn-player-broadcast btn-boundary-six"
+          onclick="triggerSixAnimation()" title="Click to Play, Click again to Stop/Remove">
+          <div class="btn-player-icon-box">6️⃣</div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label">SIX (MAXIMUM)</span>
+            <span class="btn-player-name-val">Giant Six Takeover</span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-six">▶ PLAY</span>
+        </button>
+
+        <!-- OUT / WICKET -->
+        <button id="btn-trigger-out" type="button" class="btn-player-broadcast btn-boundary-out"
+          onclick="triggerOutAnimation()" title="Click to Play, Click again to Stop/Remove">
+          <div class="btn-player-icon-box">💥</div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label">WICKET / OUT</span>
+            <span class="btn-player-name-val">Dismissal Video</span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-out">▶ PLAY</span>
+        </button>
+
+        <!-- WIDE BALL (NEON TAKEOVER) -->
+        <button id="btn-trigger-wide" type="button" class="btn-player-broadcast btn-boundary-wide"
+          onclick="triggerWideAnimation()" title="Click to Play, Click again to Stop/Remove"
+          style="background: radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.45) 0%, rgba(3, 10, 25, 0.95) 100%); border: 1.5px solid rgba(0, 242, 254, 0.5) !important;">
+          <div class="btn-player-icon-box" style="background: rgba(0, 242, 254, 0.2); color: #00f2fe;">⚡</div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label" style="color: #67e8f9;">WIDE BALL</span>
+            <span class="btn-player-name-val">Neon Lines & 3D Text</span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-wide">▶ PLAY</span>
+        </button>
+
+        <!-- NO BALL (NEON WARP TAKEOVER) -->
+        <button id="btn-trigger-noball" type="button" class="btn-player-broadcast btn-boundary-noball"
+          onclick="triggerNoBallAnimation()" title="Click to Play, Click again to Stop/Remove"
+          style="background: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.45) 0%, rgba(20, 10, 2, 0.95) 100%); border: 1.5px solid rgba(255, 187, 0, 0.5) !important;">
+          <div class="btn-player-icon-box" style="background: rgba(255, 187, 0, 0.2); color: #ffb800;">⚡</div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label" style="color: #fcd34d;">NO BALL</span>
+            <span class="btn-player-name-val">Neon Warp & Kinetic Text</span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-noball">▶ PLAY</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4. MATCH MILESTONES & SPECIALS (PLAY & STOP TOGGLE) -->
+    <div class="player-broadcast-deck-section">
+      <div class="player-deck-subheading">
+        <span>🌟 MILESTONES & SPECIAL FX (CLICK TO PLAY / STOP)</span>
+      </div>
+      <div class="milestone-anim-buttons-grid">
+        <!-- 50 RUNS -->
+        <button id="btn-trigger-milestone-50" type="button" class="btn-player-broadcast btn-milestone-50"
+          onclick="triggerMilestone50Animation()" title="Click to Play, Click again to Stop/Remove">
+          <div class="btn-player-icon-box">🌟</div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label">50 RUNS</span>
+            <span class="btn-player-name-val">Half Century</span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-milestone-50">▶ PLAY</span>
+        </button>
+
+        <!-- 100 RUNS -->
+        <button id="btn-trigger-milestone-100" type="button" class="btn-player-broadcast btn-milestone-100"
+          onclick="triggerMilestone100Animation()" title="Click to Play, Click again to Stop/Remove">
+          <div class="btn-player-icon-box">👑</div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label">100 RUNS</span>
+            <span class="btn-player-name-val">Full Century</span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-milestone-100">▶ PLAY</span>
+        </button>
+
+        <!-- FREE HIT -->
+        <button id="btn-trigger-milestone-freehit" type="button" class="btn-player-broadcast btn-milestone-freehit"
+          onclick="triggerFreeHitAnimation()" title="Click to Play, Click again to Stop/Remove">
+          <div class="btn-player-icon-box">⚡</div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label">FREE HIT</span>
+            <span class="btn-player-name-val">No Ball Alert</span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-milestone-freehit">▶ PLAY</span>
+        </button>
+
+        <!-- CHAMPIONS -->
+        <button id="btn-trigger-milestone-champions" type="button" class="btn-player-broadcast btn-milestone-champions"
+          onclick="triggerChampionsAnimation()" title="Click to Play, Click again to Stop/Remove">
+          <div class="btn-player-icon-box">🏆</div>
+          <div class="btn-player-text-content">
+            <span class="btn-player-role-label">CHAMPIONS</span>
+            <span class="btn-player-name-val">Winner Trophy</span>
+          </div>
+          <span class="btn-player-action-tag" id="tag-trigger-milestone-champions">▶ PLAY</span>
+        </button>
+      </div>
+
+      <!-- MASTER STOP / REMOVE ACTION BAR -->
+      <div class="master-stop-action-bar">
+        <button id="btn-master-show-live" type="button" class="btn-show-liveview-master" onclick="showLiveViewScoreboard()"
+          title="Immediately stop all animations and display the Live Scoreboard" style="padding: 0.75rem 1.6rem;">
+          <span class="btn-icon-screen" style="font-size: 1.3rem;">📺</span>
+          <span class="btn-main-label" style="font-size: 0.92rem;">SHOW LIVE VIEW</span>
+        </button>
+        <button id="btn-master-stop" type="button" class="btn-master-stop-anim" onclick="stopActiveAnimation()"
+          title="Immediately remove any active animation from Live View">
+          <span>⏹</span>
+          <span>REMOVE / STOP ACTIVE ANIMATION</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- BROADCAST STATUS FEEDBACK -->
+    <div>
+      <div id="broadcast-feedback" class="broadcast-feedback-status">
+        <span id="feedback-dot" class="status-dot online"></span>
+        <span id="feedback-text">Ready to broadcast animation to Match #{{ match.id }} Live View</span>
+      </div>
+    </div>
+
+    <!-- CONTROL HINTS -->
+    <div class="control-hints">
+      <span class="hint-icon">💡</span>
+      <div class="hint-text">
+        <strong>Play & Stop Controls:</strong> Click any button once to <strong>PLAY</strong> the animation on the Live
+        View. Click it again (or click the <strong>REMOVE / STOP</strong> button) to immediately <strong>REMOVE</strong>
+        the animation and restore the live scoreboard!
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ static_url('js/animation.js') }}"></script>
+{% endblock %}

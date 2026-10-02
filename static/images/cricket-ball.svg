@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- White Leather 3D Sphere Radial Gradient -->
+    <radialGradient id="whiteBallSphere" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="25%" stop-color="#f8fafc" />
+      <stop offset="55%" stop-color="#e2e8f0" />
+      <stop offset="80%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#334155" />
+    </radialGradient>
+
+    <!-- Neon Glow Filter -->
+    <filter id="proBallGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#00f0ff" flood-opacity="0.85" />
+      <feDropShadow dx="3" dy="8" stdDeviation="8" flood-color="#000000" flood-opacity="0.9" />
+    </filter>
+
+    <linearGradient id="seamDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+  </defs>
+
+  <g filter="url(#proBallGlow)">
+    <!-- 1. BASE SPHERE -->
+    <circle cx="100" cy="100" r="85" fill="url(#whiteBallSphere)" stroke="#475569" stroke-width="2" />
+
+    <!-- 2. TRANSVERSE QUARTER SEAM -->
+    <path d="M18 118 C 55 102, 145 92, 182 78" stroke="#64748b" stroke-width="1.8" fill="none" opacity="0.6" />
+
+    <!-- 3. MAIN RAISED SEAM RIBBON (CURVING ACROSS) -->
+    <path d="M40 38 C 70 65, 130 135, 160 162" stroke="#0f172a" stroke-width="7" stroke-linecap="round" fill="none" />
+    <path d="M40 38 C 70 65, 130 135, 160 162" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none" />
+
+    <!-- 4. SEAM CROSS STITCHES (CURVING LIKE IN THE USER'S PICTURE) -->
+    <g stroke="#0f172a" stroke-width="1.8" stroke-linecap="round">
+      <line x1="38" y1="44" x2="45" y2="37" />
+      <line x1="43" y1="50" x2="51" y2="43" />
+      <line x1="49" y1="56" x2="57" y2="49" />
+      <line x1="55" y1="62" x2="63" y2="55" />
+      <line x1="61" y1="69" x2="70" y2="61" />
+      <line x1="68" y1="76" x2="77" y2="68" />
+      <line x1="75" y1="83" x2="84" y2="75" />
+      <line x1="82" y1="90" x2="91" y2="82" />
+      <line x1="90" y1="98" x2="99" y2="90" />
+      <line x1="97" y1="105" x2="107" y2="97" />
+      <line x1="105" y1="113" x2="114" y2="105" />
+      <line x1="113" y1="121" x2="122" y2="113" />
+      <line x1="121" y1="128" x2="130" y2="120" />
+      <line x1="129" y1="136" x2="138" y2="128" />
+      <line x1="137" y1="144" x2="146" y2="136" />
+      <line x1="145" y1="152" x2="154" y2="144" />
+      <line x1="153" y1="160" x2="162" y2="152" />
+    </g>
+
+    <!-- 5. SPECULAR GLOSS HIGHLIGHT -->
+    <ellipse cx="68" cy="60" rx="34" ry="20" fill="#ffffff" opacity="0.8" transform="rotate(-30 68 60)" />
+    <circle cx="58" cy="50" r="6" fill="#ffffff" />
+  </g>
+</svg>

@@ -1,0 +1,406 @@
+/* ==========================================================================
+   IMAGE CROP & POSITION EDITOR - PROFESSIONAL SPORTS THEME
+   Fixed 1:1 Square Crop, Drag, Zoom, Rotate, Real-Time Preview
+   ========================================================================== */
+
+.crop-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(4, 8, 16, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.crop-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.crop-modal-card {
+  background: linear-gradient(165deg, #131b2a 0%, #0d131f 100%);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 35px rgba(56, 189, 248, 0.15);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 860px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cropModalPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cropModalPopIn {
+  0% { transform: scale(0.92) translateY(10px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Modal Header */
+.crop-modal-header {
+  padding: 0.9rem 1.25rem;
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.crop-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.crop-modal-title-icon {
+  font-size: 1.35rem;
+}
+
+.crop-modal-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.crop-modal-subtitle {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0.1rem 0 0 0;
+}
+
+.crop-modal-close-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crop-modal-close-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #fca5a5;
+  transform: rotate(90deg);
+}
+
+/* Modal Body: 2-Column Desktop Layout */
+.crop-modal-body {
+  padding: 1rem 1.25rem;
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 1.25rem;
+  align-items: center;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .crop-modal-body {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0.85rem;
+  }
+}
+
+/* Left: Interactive Viewport Container */
+.crop-stage-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.crop-viewport-container {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  background: #090d16;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.85), 0 6px 20px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  user-select: none;
+  touch-action: none;
+  cursor: grab;
+}
+
+.crop-viewport-container:active {
+  cursor: grabbing;
+}
+
+@media (max-width: 400px) {
+  .crop-viewport-container {
+    width: 270px;
+    height: 270px;
+  }
+}
+
+.crop-viewport-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+/* Crop Frame Overlay Box (The Save Window) */
+.crop-frame-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.crop-stage-hint {
+  font-size: 0.74rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Right: Tools & Live Preview Sidebar */
+.crop-sidebar-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* Live Preview Cards */
+.crop-preview-section {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.crop-preview-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.crop-previews-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+}
+
+.crop-preview-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.crop-preview-thumb-square {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+  background: #090d16;
+  overflow: hidden;
+}
+
+.crop-preview-thumb-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.35);
+  background: #090d16;
+  overflow: hidden;
+}
+
+.crop-preview-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.crop-preview-label {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* Zoom Slider & Buttons */
+.crop-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.crop-control-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.crop-zoom-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-crop-tool {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-crop-tool:hover {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.btn-crop-tool:active {
+  transform: scale(0.96);
+}
+
+.crop-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.crop-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+  cursor: pointer;
+  border: 2px solid #fff;
+  transition: transform 0.15s;
+}
+
+.crop-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.crop-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+  cursor: pointer;
+  border: 2px solid #fff;
+}
+
+/* Rotate & Reset Buttons Grid */
+.crop-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.4rem;
+}
+
+/* Modal Footer Actions */
+.crop-modal-footer {
+  padding: 0.85rem 1.25rem;
+  background: rgba(10, 15, 26, 0.8);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.btn-crop-cancel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-crop-cancel:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+.btn-crop-apply {
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  border: 1px solid #38bdf8;
+  color: #ffffff;
+  padding: 0.55rem 1.35rem;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.45);
+  transition: all 0.2s ease;
+}
+
+.btn-crop-apply:hover {
+  background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%);
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.65);
+  transform: translateY(-1px);
+}
+
+.btn-crop-apply:active {
+  transform: translateY(1px);
+}

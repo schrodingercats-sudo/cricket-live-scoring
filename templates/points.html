@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tournament.name }} - Points Table & Standings{% endblock %}
+
+{% block content %}
+<div id="tournament-data" data-tournament-id="{{ tournament.id }}"></div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">📊 Tournament Standings</h1>
+    <p class="page-subtitle">{{ tournament.name }} • Official Points Table & Net Run Rate (NRR)</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <a href="/tournament/{{ tournament.id }}" class="btn btn-primary btn-sm">🏆 Tournament Dashboard</a>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-title">
+    <span>Points Table</span>
+    <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">Points: Win (2), Tie/NR (1), Loss (0)</span>
+  </div>
+  <div id="points-table-container">
+    <div style="padding: 1.5rem; text-align: center; color: var(--text-muted);">Loading points table...</div>
+  </div>
+</div>
+
+<div id="leaderboards-container"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/tournament.js"></script>
+{% endblock %}

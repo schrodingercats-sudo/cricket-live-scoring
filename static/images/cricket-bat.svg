@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 280" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Blade Willow/White Gradient with 3D Depth -->
+    <linearGradient id="proBatBlade" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#cbd5e1" />
+      <stop offset="15%" stop-color="#f8fafc" />
+      <stop offset="45%" stop-color="#ffffff" />
+      <stop offset="65%" stop-color="#f1f5f9" />
+      <stop offset="88%" stop-color="#cbd5e1" />
+      <stop offset="100%" stop-color="#94a3b8" />
+    </linearGradient>
+
+    <!-- Blade Wood Grain Subtle Highlights -->
+    <linearGradient id="proBatSpine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0)" />
+      <stop offset="50%" stop-color="rgba(255,255,255,0.95)" />
+      <stop offset="100%" stop-color="rgba(0,0,0,0.3)" />
+    </linearGradient>
+
+    <!-- Handle Grip -->
+    <linearGradient id="proHandleGrip" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="35%" stop-color="#334155" />
+      <stop offset="60%" stop-color="#64748b" />
+      <stop offset="85%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- Metallic Blue & Cyan Decal Stripe -->
+    <linearGradient id="proDecal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="40%" stop-color="#00f0ff" />
+      <stop offset="70%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+
+    <!-- Neon Cyan Shadow Glow -->
+    <filter id="proBatGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#00f0ff" flood-opacity="0.85" />
+      <feDropShadow dx="3" dy="8" stdDeviation="8" flood-color="#000000" flood-opacity="0.9" />
+    </filter>
+  </defs>
+
+  <g filter="url(#proBatGlow)" transform="translate(15, 10)">
+    <!-- 1. HANDLE -->
+    <!-- Handle Cap -->
+    <ellipse cx="75" cy="18" rx="9" ry="4" fill="#020617" />
+    <!-- Handle Cane Cylinder with Grip Spirals -->
+    <path d="M67 20 L65 88 Q65 94 68 98 L82 98 Q85 94 85 88 L83 20 Z" fill="url(#proHandleGrip)" stroke="#0f172a" stroke-width="1.5" />
+    <!-- Grip Ribs / Rings -->
+    <line x1="66.5" y1="35" x2="83.5" y2="35" stroke="#f8fafc" stroke-width="1.5" opacity="0.4" />
+    <line x1="66" y1="52" x2="84" y2="52" stroke="#f8fafc" stroke-width="1.5" opacity="0.4" />
+    <line x1="65.5" y1="69" x2="84.5" y2="69" stroke="#f8fafc" stroke-width="1.5" opacity="0.4" />
+    <line x1="65" y1="85" x2="85" y2="85" stroke="#f8fafc" stroke-width="1.5" opacity="0.4" />
+
+    <!-- 2. BLADE (SHAPE LIKE IN PICTURE) -->
+    <path d="M68 98 
+             C56 100, 42 110, 40 125 
+             L38 238 
+             C38 250, 48 258, 60 260 
+             L90 260 
+             C102 258, 112 250, 112 238 
+             L110 125 
+             C108 110, 94 100, 82 98 
+             Z" 
+          fill="url(#proBatBlade)" 
+          stroke="#475569" 
+          stroke-width="1.8" />
+
+    <!-- Central Ridge Spine -->
+    <path d="M75 98 L75 258" stroke="url(#proBatSpine)" stroke-width="3" />
+
+    <!-- Blade Specular Shine / Bevel Edge -->
+    <path d="M40 125 C42 110, 56 100, 68 98 L75 98 L75 258 L60 260 C48 258, 38 250, 38 238 Z" fill="rgba(255,255,255,0.35)" />
+
+    <!-- 3. BRANDING DECAL / STICKER (PRO ATHLETIC CHEVRON) -->
+    <!-- Top Diagonal Stripe -->
+    <path d="M46 122 Q75 134 104 122 L105 138 Q75 150 45 138 Z" fill="url(#proDecal)" />
+    <!-- Main Center Badge -->
+    <g transform="translate(0, 15)">
+      <path d="M50 142 Q75 155 100 142 L102 186 Q75 200 48 186 Z" fill="url(#proDecal)" stroke="#00f0ff" stroke-width="1.2" />
+      <polygon points="75,148 83,162 67,162" fill="#ffffff" />
+      <polygon points="75,178 67,162 83,162" fill="#00f0ff" />
+      <text x="75" y="172" font-family="'Arial Black', Impact, sans-serif" font-weight="900" font-size="7" fill="#ffffff" text-anchor="middle" letter-spacing="1">PRO</text>
+    </g>
+
+    <!-- 4. BOTTOM TOE GUARD -->
+    <path d="M38 244 C38 254, 48 261, 60 262 L90 262 C102 261, 112 254, 112 244 L112 238 C102 247, 90 252, 75 252 C60 252, 48 247, 38 238 Z" fill="#0f172a" stroke="#00f0ff" stroke-width="0.8" />
+
+    <!-- Gloss Highlight Slash -->
+    <path d="M44 116 Q60 185 58 240" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.75" />
+  </g>
+</svg>

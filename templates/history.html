@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}History & Archive - Hostel Cricket{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">📜 History & Archive</h1>
+    <p class="page-subtitle">View and restore deleted tournaments and matches. Reopen any archived match or tournament at any time with all data intact.</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <a href="/" class="btn btn-secondary">
+      <span>🏠 Home</span>
+    </a>
+  </div>
+</div>
+
+<!-- Tabs Navigation -->
+<div class="tabs-container">
+  <button class="tab-btn history-tab-btn active" data-target="history-matches">
+    <span>🏏 Deleted Matches ({{ deleted_matches|length }})</span>
+  </button>
+  <button class="tab-btn history-tab-btn" data-target="history-tournaments">
+    <span>🏆 Deleted Tournaments ({{ deleted_tournaments|length }})</span>
+  </button>
+</div>
+
+<!-- Tab: Deleted Matches -->
+<div id="history-matches" class="tab-content history-tab-content active">
+  {% if deleted_matches and deleted_matches|length > 0 %}
+  <div class="grid-2">
+    {% for dm in deleted_matches %}
+    <div class="match-card" style="border-color: rgba(255, 255, 255, 0.15);">
+      <div class="match-card-header">
+        <div>
+          <span style="font-weight: 700; color: #fff;">{{ dm.tournament.name if dm.tournament else 'Tournament' }}</span>
+          <span style="color: var(--text-muted); font-size: 0.85rem;"> • Match #{{ dm.id }} ({{ dm.total_overs }} Overs)</span>
+        </div>
+        <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">ARCHIVED</span>
+      </div>
+      <div>
+        <div class="match-team-row">
+          <span class="team-name" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+            {% if dm.team1.logo_url %}
+              <img src="{{ dm.team1.logo_url }}" alt="{{ dm.team1.name }}" class="team-avatar team-avatar-xs" style="width: 22px; height: 22px;">
+            {% else %}
+              <span class="team-avatar team-avatar-xs" style="width: 22px; height: 22px; font-size: 0.65rem;">{{ dm.team1.short_name or dm.team1.name[:2] }}</span>
+            {% endif %}
+            <span>{{ dm.team1.name }}</span>
+          </span>
+          <span class="team-score">
+            {% for inn in dm.innings if inn.batting_team_id == dm.team1_id %}
+              {{ inn.total_runs }}/{{ inn.total_wickets }} ({{ inn.legal_balls // 6 }}.{{ inn.legal_balls % 6 }})
+            {% endfor %}
+          </span>
+        </div>
+        <div class="match-team-row">
+          <span class="team-name" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+            {% if dm.team2.logo_url %}
+              <img src="{{ dm.team2.logo_url }}" alt="{{ dm.team2.name }}" class="team-avatar team-avatar-xs" style="width: 22px; height: 22px;">
+            {% else %}
+              <span class="team-avatar team-avatar-xs" style="width: 22px; height: 22px; font-size: 0.65rem;">{{ dm.team2.short_name or dm.team2.name[:2] }}</span>
+            {% endif %}
+            <span>{{ dm.team2.name }}</span>
+          </span>
+          <span class="team-score">
+            {% for inn in dm.innings if inn.batting_team_id == dm.team2_id %}
+              {{ inn.total_runs }}/{{ inn.total_wickets }} ({{ inn.legal_balls // 6 }}.{{ inn.legal_balls % 6 }})
+            {% endfor %}
+          </span>
+        </div>
+        {% if dm.deleted_at %}
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.6rem;">
+            🕒 Deleted on: {{ dm.deleted_at.strftime("%b %d, %Y %I:%M %p") }}
+          </div>
+        {% endif %}
+      </div>
+      <div class="match-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button class="btn btn-primary btn-sm" style="flex: 1.5;" onclick="restoreHistoryMatch({{ dm.id }}, {{ dm.id }}, '{{ dm.team1.name }}', '{{ dm.team2.name }}', {{ dm.tournament_id }})">
+          🔄 Restore to Tournament
+        </button>
+        {% if dm.tournament_id %}
+          <a href="/tournament/{{ dm.tournament_id }}" class="btn btn-secondary btn-sm" style="flex: 1;">
+            🏆 Open Tourney
+          </a>
+        {% endif %}
+        <button class="btn btn-secondary btn-sm" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);" onclick="permanentDeleteHistoryMatch({{ dm.id }}, {{ dm.id }})" title="Delete Forever">
+          🗑️ Erase
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card" style="text-align: center; padding: 3rem 1rem;">
+    <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🏏</div>
+    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">No Deleted Matches in History</h3>
+    <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto;">
+      When you delete a match from a tournament schedule, it is archived here. You can reopen and restore it back to the tournament anytime.
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Tab: Deleted Tournaments -->
+<div id="history-tournaments" class="tab-content history-tab-content">
+  {% if deleted_tournaments and deleted_tournaments|length > 0 %}
+  <div class="grid-3">
+    {% for dt in deleted_tournaments %}
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-color: rgba(255, 255, 255, 0.15);">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+          <h3 style="font-size: 1.2rem; font-weight: 700; color: #fff;">{{ dt.name }}</h3>
+          <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">ARCHIVED</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">
+          <strong>{{ dt.teams|length }}</strong> Teams • <strong>{{ dt.matches|length }}</strong> Matches • <strong>{{ dt.format_overs }}</strong> Overs
+        </p>
+        {% if dt.deleted_at %}
+          <p style="font-size: 0.78rem; color: var(--text-muted);">
+            🕒 Deleted: {{ dt.deleted_at.strftime("%b %d, %Y %I:%M %p") }}
+          </p>
+        {% endif %}
+      </div>
+      <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <button class="btn btn-primary btn-sm" style="flex: 1.5;" onclick="restoreHistoryTournament({{ dt.id }}, '{{ dt.name }}')">
+          🔄 Restore Tournament
+        </button>
+        <button class="btn btn-secondary btn-sm" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);" onclick="permanentDeleteHistoryTournament({{ dt.id }}, '{{ dt.name }}')" title="Delete Forever">
+          🗑️ Erase
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card" style="text-align: center; padding: 3rem 1rem;">
+    <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🏆</div>
+    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">No Deleted Tournaments</h3>
+    <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto;">
+      When you delete a tournament, it is safely stored in history so you can restore and reopen it whenever needed.
+    </p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Tab switching for History page
+  const tabBtns = document.querySelectorAll(".history-tab-btn");
+  const tabContents = document.querySelectorAll(".history-tab-content");
+
+  tabBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tabBtns.forEach((b) => b.classList.remove("active"));
+      tabContents.forEach((c) => c.classList.remove("active"));
+
+      btn.classList.add("active");
+      const target = document.getElementById(btn.dataset.target);
+      if (target) target.classList.add("active");
+    });
+  });
+
+  function restoreHistoryMatch(matchId, matchNumber, team1Name, team2Name, tourneyId) {
+    showConfirmModal({
+      title: "Restore Match to Tournament?",
+      message: `Do you want to restore <strong>Match #${matchNumber}: ${team1Name} vs ${team2Name}</strong> back to the active tournament schedule?`,
+      confirmText: "Yes, Restore Match",
+      isDanger: false,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/matches/${matchId}/restore`, { method: "POST" });
+          if (res.ok) {
+            showToast("Match restored to tournament schedule!", "success");
+            setTimeout(() => {
+              if (tourneyId) {
+                window.location.href = `/tournament/${tourneyId}`;
+              } else {
+                window.location.reload();
+              }
+            }, 500);
+          } else {
+            const err = await res.json();
+            showToast(err.detail || "Failed to restore match", "error");
+          }
+        } catch (e) {
+          showToast("Network error", "error");
+        }
+      }
+    });
+  }
+
+  function permanentDeleteHistoryMatch(matchId, matchNumber) {
+    showConfirmModal({
+      title: "Permanently Erase Match?",
+      message: `Are you sure you want to <strong>permanently erase</strong> Match #${matchNumber}?<br><br><span style="color:var(--danger);font-size:0.85rem;">⚠️ Warning: This cannot be undone. All ball-by-ball scoring data will be permanently wiped.</span>`,
+      confirmText: "Erase Permanently",
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/matches/${matchId}/permanent`, { method: "DELETE" });
+          if (res.ok) {
+            showToast("Match permanently erased.", "success");
+            setTimeout(() => window.location.reload(), 500);
+          } else {
+            const err = await res.json();
+            showToast(err.detail || "Failed to permanently delete match", "error");
+          }
+        } catch (e) {
+          showToast("Network error", "error");
+        }
+      }
+    });
+  }
+
+  function restoreHistoryTournament(tourneyId, tourneyName) {
+    showConfirmModal({
+      title: "Restore Tournament?",
+      message: `Do you want to restore tournament <strong>"${tourneyName}"</strong> back to active tournaments?`,
+      confirmText: "Yes, Restore Tournament",
+      isDanger: false,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/tournaments/${tourneyId}/restore`, { method: "POST" });
+          if (res.ok) {
+            showToast("Tournament restored successfully!", "success");
+            setTimeout(() => {
+              window.location.href = `/tournament/${tourneyId}`;
+            }, 500);
+          } else {
+            const err = await res.json();
+            showToast(err.detail || "Failed to restore tournament", "error");
+          }
+        } catch (e) {
+          showToast("Network error", "error");
+        }
+      }
+    });
+  }
+
+  function permanentDeleteHistoryTournament(tourneyId, tourneyName) {
+    showConfirmModal({
+      title: "Permanently Erase Tournament?",
+      message: `Are you sure you want to <strong>permanently erase</strong> tournament <strong>"${tourneyName}"</strong>?<br><br><span style="color:var(--danger);font-size:0.85rem;">⚠️ Warning: This cannot be undone. All teams, matches, and deliveries will be permanently deleted.</span>`,
+      confirmText: "Erase Permanently",
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/tournaments/${tourneyId}/permanent`, { method: "DELETE" });
+          if (res.ok) {
+            showToast("Tournament permanently erased.", "success");
+            setTimeout(() => window.location.reload(), 500);
+          } else {
+            const err = await res.json();
+            showToast(err.detail || "Failed to permanently delete tournament", "error");
+          }
+        } catch (e) {
+          showToast("Network error", "error");
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

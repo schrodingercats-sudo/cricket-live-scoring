@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Hostel Cricket Cup - Live Scoring{% endblock %}</title>
+  <link rel="icon" href="/favicon.ico" type="image/png">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ static_url('css/style.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/crop-editor.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+  <header>
+    <div class="nav-container">
+      <a href="/" class="brand-link">
+        <span class="brand-logo">🏏</span>
+        <span>Hostel Cricket</span>
+      </a>
+      <nav class="nav-links">
+        <a href="/" class="nav-link">🏠 Tournaments</a>
+        <a href="/history" class="nav-link">📜 History</a>
+        <button class="btn btn-primary btn-sm" onclick="openGlobalTournamentModal()">➕ New Tournament</button>
+        {% block nav_actions %}{% endblock %}
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Global Create Tournament Modal -->
+  <div id="global-create-tournament-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Create New Tournament</h3>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeGlobalTournamentModal()">✕</button>
+      </div>
+      <form id="global-create-tournament-form">
+        <div class="form-group">
+          <label class="form-label" for="global-tourney-name">Tournament Name</label>
+          <input type="text" id="global-tourney-name" class="form-input" placeholder="e.g. Hostel Cricket Cup 2026"
+            required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="global-tourney-overs">Default Overs per Match</label>
+          <input type="number" id="global-tourney-overs" class="form-input" value="10" min="1" max="50" required>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeGlobalTournamentModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Tournament</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Global Confirmation / Permission Modal -->
+  <div id="confirm-action-modal" class="modal-overlay">
+    <div class="modal-content" style="border-color: var(--danger); max-width: 450px;">
+      <div class="modal-header">
+        <h3 id="confirm-modal-title" class="modal-title" style="color: var(--danger);">⚠️ Confirm Delete</h3>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeConfirmModal()">✕</button>
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <p id="confirm-modal-message" style="color: var(--text-main); font-size: 0.95rem; line-height: 1.5;"></p>
+      </div>
+      <div class="form-actions" style="display: flex; gap: 0.75rem;">
+        <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeConfirmModal()">Cancel</button>
+        <button type="button" id="confirm-modal-btn" class="btn btn-danger" style="flex: 1.2;">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Hostel Cricket Tournament Management & Real-Time Live Scoring System • Fast & Authoritative</p>
+  </footer>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="{{ static_url('js/websocket-client.js') }}"></script>
+  <script>
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add("active");
+        el.style.display = "flex";
+      }
+    }
+    window.openModal = openModal;
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove("active");
+        el.style.display = "";
+      }
+    }
+    window.closeModal = closeModal;
+
+    let currentConfirmHandler = null;
+
+    function showConfirmModal({ title, message, confirmText = "Confirm Delete", isDanger = true, onConfirm }) {
+      document.getElementById("confirm-modal-title").innerText = title || "Confirm Action";
+      document.getElementById("confirm-modal-message").innerHTML = message || "Are you sure you want to proceed?";
+      const btn = document.getElementById("confirm-modal-btn");
+      btn.innerText = confirmText;
+      btn.className = isDanger ? "btn btn-danger" : "btn btn-primary";
+
+      currentConfirmHandler = onConfirm;
+      openModal("confirm-action-modal");
+    }
+
+    function closeConfirmModal() {
+      closeModal("confirm-action-modal");
+      currentConfirmHandler = null;
+    }
+
+    document.getElementById("confirm-modal-btn")?.addEventListener("click", async () => {
+      if (currentConfirmHandler) {
+        const fn = currentConfirmHandler;
+        closeConfirmModal();
+        await fn();
+      }
+    });
+
+    function openGlobalTournamentModal() {
+      document.getElementById("global-create-tournament-modal")?.classList.add("active");
+    }
+    function closeGlobalTournamentModal() {
+      document.getElementById("global-create-tournament-modal")?.classList.remove("active");
+    }
+
+    document.getElementById("global-create-tournament-form")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("global-tourney-name").value.trim();
+      const overs = parseInt(document.getElementById("global-tourney-overs").value, 10);
+      if (!name) return;
+
+      const btn = e.target.querySelector("button[type='submit']");
+      btn.disabled = true;
+      btn.innerText = "Creating...";
+
+      try {
+        const res = await fetch("/api/tournaments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name, format_overs: overs })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          window.location.href = `/tournament/${data.id}`;
+        } else {
+          btn.disabled = false;
+          btn.innerText = "Create Tournament";
+          const err = await res.json();
+          showToast(err.detail || "Error creating tournament", "error");
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerText = "Create Tournament";
+        showToast("Network error", "error");
+      }
+    });
+  </script>
+  <script src="{{ static_url('js/crop-editor.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>
